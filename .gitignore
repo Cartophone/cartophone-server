@@ -1,0 +1,19 @@
+# Binaries
+*.exe
+*.exe~
+*.out
+*.o
+
+# Logs and other output
+*.log
+*.tmp
+
+# Go vendor directory
+vendor/
+
+# Ignore Go binary and environment files
+go.sum
+go.mod
+
+# Ignore OS-specific files
+.DS_Store
