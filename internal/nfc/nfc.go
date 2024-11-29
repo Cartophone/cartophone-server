@@ -19,7 +19,7 @@ func NewReader(devicePath string) (*Reader, error) {
 		return nil, fmt.Errorf("failed to open NFC device: %v", err)
 	}
 
-	// Return a new Reader instance with the pointer to the opened device
+	// Return the Reader struct, passing the pointer to the device
 	return &Reader{device: &dev}, nil
 }
 
@@ -51,7 +51,7 @@ func (r *Reader) Scan(modulations []nfc.Modulation, attempts int, period time.Du
 	return fmt.Sprintf("% X", isoTarget.UID), nil
 }
 
-// StartPolling starts the NFC polling in a separate goroutine and sends detected card UID via channel.
+// StartPolling continuously scans for cards and sends detected UID to the provided channel.
 func (r *Reader) StartPolling(cardDetectedChan chan<- string) {
 	// Define modulation types for polling (ISO14443a, 106 kbps)
 	modulations := []nfc.Modulation{
@@ -68,13 +68,13 @@ func (r *Reader) StartPolling(cardDetectedChan chan<- string) {
 				continue
 			}
 
-			// If a tag is detected, send its UID to the main thread through the channel
 			if uid != "" {
-				cardDetectedChan <- uid
+				// Send the UID to the main thread for display
+				cardDetectedChan <- fmt.Sprintf("%s Card was read!", uid)
 			}
 
 			// Wait before polling again
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 		}
 	}()
 }
