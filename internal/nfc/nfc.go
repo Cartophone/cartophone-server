@@ -2,26 +2,25 @@ package nfc
 
 import (
 	"fmt"
+	"github.com/clausecker/nfc/v2"
 	"time"
-
-	"github.com/clausecker/nfc/v2"  // Ensure correct import of nfc package
 )
 
 // Reader represents the NFC reader instance.
 type Reader struct {
-    device *nfc.Device // Pointer to nfc.Device
+	device *nfc.Device // Store a pointer to nfc.Device
 }
 
 // NewReader initializes and returns a new NFC Reader.
 func NewReader(devicePath string) (*Reader, error) {
-    // Open the NFC device
-    dev, err := nfc.Open(devicePath)
-    if err != nil {
-        return nil, fmt.Errorf("failed to open NFC device: %v", err)
-    }
+	// Open the NFC device (returns a value of type nfc.Device)
+	dev, err := nfc.Open(devicePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open NFC device: %v", err)
+	}
 
-    // Return a new Reader instance with the pointer to the device
-    return &Reader{device: &dev}, nil // Pass the pointer here
+	// Return the Reader struct with a pointer to dev
+	return &Reader{device: &dev}, nil
 }
 
 // Close closes the NFC device connection.
@@ -41,11 +40,13 @@ func (r *Reader) Scan(modulations []nfc.Modulation, attempts int, period time.Du
 		return "", fmt.Errorf("no NFC target detected")
 	}
 
+	// Check if the target is ISO14443a
 	isoTarget, ok := target.(*nfc.ISO14443aTarget)
 	if !ok {
 		return "", fmt.Errorf("unsupported NFC target type")
 	}
 
+	// Return UID as a formatted string
 	return fmt.Sprintf("% X", isoTarget.UID), nil
 }
 
