@@ -2,13 +2,14 @@ package nfc
 
 import (
 	"fmt"
-	"time" // Add time package
-	"github.com/clausecker/nfc/v2"
+	"time"
+
+	"github.com/clausecker/nfc/v2"  // Ensure correct import of nfc package
 )
 
 // Reader represents the NFC reader instance.
 type Reader struct {
-	device *nfc.Device // Store a pointer to the NFC device
+	device *nfc.Device
 }
 
 // NewReader initializes and returns a new NFC Reader.
@@ -20,7 +21,7 @@ func NewReader(devicePath string) (*Reader, error) {
 	}
 
 	// Return a new Reader instance with the pointer to the device
-	return &Reader{device: &dev}, nil // Ensure we pass a pointer to the device
+	return &Reader{device: dev}, nil
 }
 
 // Close closes the NFC device connection.

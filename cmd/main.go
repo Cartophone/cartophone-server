@@ -1,79 +1,30 @@
 package main
 
 import (
-	"context"
+	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
-	"time"
 
-	"cartophone-server/internal/api"
-	"cartophone-server/internal/nfc"
-	"cartophone-server/internal/owntone"
-	"cartophone-server/internal/pocketbase"
-
-	"github.com/go-chi/chi/v5"
+	"cartophone-server/internal/api"  // Ensure this points to your internal API package
+	"cartophone-server/internal/nfc"  // Ensure this points to your internal NFC package
 )
 
 func main() {
-	// Initialize dependencies
-	nfcReader, err := nfc.NewReader("pn532_i2c:/dev/i2c-1:0x24")
+	// Initialize NFC reader
+	reader, err := nfc.NewReader("pn532_i2c:/dev/i2c-1:0x24")
 	if err != nil {
 		log.Fatalf("Failed to initialize NFC reader: %v", err)
 	}
-	defer nfcReader.Close()
+	defer reader.Close()
 
-	pbClient := pocketbase.NewClient("http://127.0.0.1:8090")
-	owntoneClient := owntone.NewClient("http://127.0.0.1:3689")
+	// Set up the HTTP server and routes
+	http.HandleFunc("/register-card", api.RegisterCardHandler(reader))  // Register card handler
+	http.HandleFunc("/scan-card", api.ScanCardHandler(reader))          // Scan card handler
 
-	// Start background tasks
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		api.RunNFCPoller(nfcReader, pbClient, owntoneClient)
-	}()
-
-	go func() {
-		defer wg.Done()
-		api.RunAlarmMonitor(pbClient, owntoneClient)
-	}()
-
-	// Set up HTTP API
-	r := chi.NewRouter()
-	r.Post("/register-card", func(w http.ResponseWriter, r *http.Request) {
-		api.RegisterCardHandler(w, r, nfcReader, pbClient)
-	})
-
-	// Create HTTP server
-	srv := &http.Server{
-		Addr:    ":8080",
-		Handler: r,
+	// Start the server
+	fmt.Println("Starting the server on :8080")
+	err = http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatalf("Error starting server: %v", err)
 	}
-
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("HTTP server failed: %v", err)
-		}
-	}()
-	log.Println("HTTP server running on :8080")
-
-	// Graceful shutdown
-	stop := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
-	<-stop
-
-	log.Println("Shutting down...")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server shutdown failed: %v", err)
-	}
-	wg.Wait()
-	log.Println("Application exited.")
 }
