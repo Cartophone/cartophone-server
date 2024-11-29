@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"cartophone-server/internal/nfc" // Import the internal nfc package
@@ -14,6 +15,19 @@ func main() {
 	}
 	defer reader.Close()
 
-	// Start polling for NFC tags
-	reader.StartPolling() // Call the function that continuously scans for NFC tags
+	// Create a channel to receive NFC card UIDs asynchronously
+	cardDetectedChan := make(chan string)
+
+	// Start polling NFC tags asynchronously
+	reader.StartPolling(cardDetectedChan)
+
+	// Main loop to handle detected cards
+	for {
+		select {
+		case uid := <-cardDetectedChan:
+			// Trigger actions when a card is detected
+			fmt.Printf("Card detected! UID: %s\n", uid)
+			// You can add further logic here, e.g., interacting with Pocketbase or Owntone.
+		}
+	}
 }
