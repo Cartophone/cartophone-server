@@ -56,8 +56,11 @@ func main() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
 
+	// Start the register action in a separate goroutine
+	go handlers.HandleRegisterAction(cardDetectedChan) // Ensure HandleRegisterAction is defined
+
 	// Start the read action in a separate goroutine
-	go handlers.HandleReadAction(cardDetectedChan, modeSwitch)
+	go handlers.HandleReadAction(cardDetectedChan, modeSwitch) // Ensure HandleReadAction is defined
 
 	// Main loop to handle detected cards
 	for {
