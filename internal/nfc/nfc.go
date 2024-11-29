@@ -20,8 +20,8 @@ func NewReader(devicePath string) (*Reader, error) {
 		return nil, fmt.Errorf("failed to open NFC device: %v", err)
 	}
 
-	// Return a new Reader instance
-	return &Reader{device: dev}, nil
+	// Return a new Reader instance with the pointer to the device
+	return &Reader{device: &dev}, nil // Ensure we pass a pointer to the device
 }
 
 // Close closes the NFC device connection.
@@ -33,7 +33,6 @@ func (r *Reader) Close() {
 
 // Scan polls for NFC tags and returns the tag's UID if found.
 func (r *Reader) Scan(modulations []nfc.Modulation, attempts int, period time.Duration) (string, error) {
-	// Poll for an NFC target
 	count, target, err := r.device.InitiatorPollTarget(modulations, attempts, period)
 	if err != nil {
 		return "", fmt.Errorf("error polling NFC target: %v", err)
@@ -42,13 +41,11 @@ func (r *Reader) Scan(modulations []nfc.Modulation, attempts int, period time.Du
 		return "", fmt.Errorf("no NFC target detected")
 	}
 
-	// Ensure the target is ISO14443a-compatible
 	isoTarget, ok := target.(*nfc.ISO14443aTarget)
 	if !ok {
 		return "", fmt.Errorf("unsupported NFC target type")
 	}
 
-	// Return the UID as a formatted string
 	return fmt.Sprintf("% X", isoTarget.UID), nil
 }
 
