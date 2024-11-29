@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"cartophone-server/internal/nfc" // Import the internal nfc package
