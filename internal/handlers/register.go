@@ -2,15 +2,21 @@ package handlers
 
 import (
 	"fmt"
+	"net/http"
+	"time"
 )
 
-// HandleRegisterAction listens for detected card UID and simulates the "Register" action.
-func HandleRegisterAction(cardDetectedChan <-chan string) {
-	for {
-		select {
-		case uid := <-cardDetectedChan:
-			// Simulate registering the card by printing a message to the console
-			fmt.Printf("Registering card %s\n", uid)
-		}
+// RegisterHandler handles the /register route
+func RegisterHandler(cardDetectedChan <-chan string, w http.ResponseWriter, r *http.Request) {
+	// Waiting for a card to be detected within 10 seconds
+	select {
+	case uid := <-cardDetectedChan:
+		// Card detected, simulate registration action
+		fmt.Printf("Registering card %s\n", uid)
+		fmt.Fprintf(w, "Registering card %s\n", uid)
+	case <-time.After(10 * time.Second):
+		// No card detected within timeout
+		fmt.Println("No card detected")
+		fmt.Fprintf(w, "No card detected\n")
 	}
 }
