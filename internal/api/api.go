@@ -1,9 +1,12 @@
 package api
 
 import (
+	"tmp"
     "log"
     "net/http"
-    "cartophone-server/internal/nfc" // Ensure this import is correct
+    "cartophone-server/internal/nfc"
+    "cartophone-server/internal/owntone"
+    "cartophone-server/internal/pocketbase" // Ensure this import is correct
 )
 
 func RunNFCPoller(reader *nfc.Reader, pbClient *pocketbase.Client, otClient *owntone.Client) {
