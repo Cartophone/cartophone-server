@@ -9,9 +9,13 @@ func HandleReadAction(cardDetectedChan <-chan string, modeSwitch <-chan bool) {
 	// Start reading NFC cards
 	for {
 		select {
-		case <-modeSwitch:
+		case active := <-modeSwitch:
 			// Wait for the mode to switch to true (read mode)
-			fmt.Println("Reading mode active")
+			if active {
+				fmt.Println("Reading mode active")
+			} else {
+				fmt.Println("Reading mode paused")
+			}
 		case uid := <-cardDetectedChan:
 			// Only read if in active mode
 			select {
