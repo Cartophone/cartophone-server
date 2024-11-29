@@ -74,7 +74,7 @@ func (r *Reader) StartPolling(cardDetectedChan chan<- string) {
 			}
 
 			// Wait before polling again
-			time.Sleep(1 * time.Second)
+			time.Sleep(200 * time.Millisecond)
 		}
 	}()
 }

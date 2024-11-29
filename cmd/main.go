@@ -4,30 +4,24 @@ import (
 	"fmt"
 	"log"
 
+	"cartophone-server/config"   // Import config package
 	"cartophone-server/internal/nfc" // Import the internal nfc package
 )
 
 func main() {
-	// Initialize the NFC reader
-	reader, err := nfc.NewReader("pn532_i2c:/dev/i2c-1:0x24") // Adjust device path as needed
+	// Load the configuration from config.json
+	config, err := config.LoadConfig("config.json")
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	// Initialize the NFC reader using the device path from the config
+	reader, err := nfc.NewReader(config.DevicePath) // Use the loaded DevicePath
 	if err != nil {
 		log.Fatalf("Failed to initialize NFC reader: %v", err)
 	}
 	defer reader.Close()
 
-	// Create a channel to receive NFC card UIDs asynchronously
-	cardDetectedChan := make(chan string)
-
-	// Start polling NFC tags asynchronously
-	reader.StartPolling(cardDetectedChan)
-
-	// Main loop to handle detected cards
-	for {
-		select {
-		case uid := <-cardDetectedChan:
-			// Trigger actions when a card is detected
-			fmt.Printf("Card detected! UID: %s\n", uid)
-			// You can add further logic here, e.g., interacting with Pocketbase or Owntone.
-		}
-	}
+	// Start polling for NFC tags
+	reader.StartPolling() // Call the function that continuously scans for NFC tags
 }
