@@ -32,19 +32,32 @@ func main() {
 	// Create a channel to receive NFC card UIDs asynchronously
 	cardDetectedChan := make(chan string)
 
+	// Create a mode switch channel to control the activation of read mode
+	modeSwitch := make(chan bool)
+
 	// Start polling for NFC cards (use the device directly from reader)
 	go reader.StartRead(cardDetectedChan)
 
 	// Handle the /register endpoint to trigger register mode
 	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		// In register mode, wait for a card for 10 seconds
+		// Activate register mode, suspend the reading action
+		fmt.Println("Register mode activated. Waiting for a card...")
+		modeSwitch <- false // Suspend the reading handler
+
+		// Call the RegisterHandler
 		handlers.RegisterHandler(cardDetectedChan, w, r)
+
+		// Reactivate the reading mode after registration is done
+		modeSwitch <- true // Re-enable the reading handler
 	})
 
 	// Start the HTTP server to listen for requests
 	go func() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
+
+	// Start the read action in a separate goroutine
+	go handlers.HandleReadAction(cardDetectedChan, modeSwitch)
 
 	// Main loop to handle detected cards
 	for {

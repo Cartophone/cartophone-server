@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"net/http"
-	"time"
 )
 
 // RegisterHandler listens for detected card UID and simulates the "Register" action.
