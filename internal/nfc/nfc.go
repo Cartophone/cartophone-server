@@ -9,19 +9,19 @@ import (
 
 // Reader represents the NFC reader instance.
 type Reader struct {
-	device *nfc.Device
+    device *nfc.Device // Pointer to nfc.Device
 }
 
 // NewReader initializes and returns a new NFC Reader.
 func NewReader(devicePath string) (*Reader, error) {
-	// Open the NFC device
-	dev, err := nfc.Open(devicePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open NFC device: %v", err)
-	}
+    // Open the NFC device
+    dev, err := nfc.Open(devicePath)
+    if err != nil {
+        return nil, fmt.Errorf("failed to open NFC device: %v", err)
+    }
 
-	// Return a new Reader instance with the pointer to the device
-	return &Reader{device: dev}, nil
+    // Return a new Reader instance with the pointer to the device
+    return &Reader{device: &dev}, nil // Pass the pointer here
 }
 
 // Close closes the NFC device connection.
