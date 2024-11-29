@@ -8,6 +8,7 @@ import (
 
 	"cartophone-server/config"   // Import config package
 	"cartophone-server/internal/nfc" // Import the internal nfc package
+	"cartophone-server/internal/handlers" // Import the internal handlers package
 )
 
 func main() {
@@ -27,24 +28,13 @@ func main() {
 	// Create a channel to receive NFC card UIDs asynchronously
 	cardDetectedChan := make(chan string)
 
-	// Start polling NFC tags asynchronously, passing the channel
-	go reader.StartPolling(cardDetectedChan)
+	// Start the read action that continuously scans for cards and triggers actions
+	go nfc.StartRead(cardDetectedChan, reader.device)
 
-	// Handle the /register endpoint to activate register mode
+	// Handle the /register endpoint to trigger register mode
 	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		// Register mode: wait for a card for 10 seconds
-		fmt.Println("Register mode activated. Waiting for a card...")
-
-		select {
-		case uid := <-cardDetectedChan:
-			// Card detected within 10 seconds
-			fmt.Println(uid)
-			fmt.Fprintf(w, "%s\n", uid)
-		case <-time.After(10 * time.Second):
-			// No card detected within 10 seconds
-			fmt.Println("No card detected")
-			fmt.Fprintf(w, "No card detected\n")
-		}
+		// In register mode, wait for a card for 10 seconds
+		handlers.RegisterHandler(cardDetectedChan, w, r)
 	})
 
 	// Start the HTTP server to listen for requests
@@ -52,12 +42,12 @@ func main() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
 
-	// Main loop to handle detected cards (continuously running)
+	// Main loop to handle detected cards (this is for continuous scanning)
 	for {
 		select {
 		case uid := <-cardDetectedChan:
 			// Print the detected card message
-			fmt.Println(uid)
+			fmt.Printf("Detected card UID: %s\n", uid)
 		}
 	}
 }

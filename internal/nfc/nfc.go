@@ -51,8 +51,8 @@ func (r *Reader) Scan(modulations []nfc.Modulation, attempts int, period time.Du
 	return fmt.Sprintf("% X", isoTarget.UID), nil
 }
 
-// StartPolling continuously scans for cards and sends detected UID to the provided channel.
-func (r *Reader) StartPolling(cardDetectedChan chan<- string) {
+// StartRead continuously scans for NFC cards and sends detected UID to the provided channel.
+func (r *Reader) StartRead(cardDetectedChan chan<- string) {
 	// Define modulation types for polling (ISO14443a, 106 kbps)
 	modulations := []nfc.Modulation{
 		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
@@ -69,7 +69,7 @@ func (r *Reader) StartPolling(cardDetectedChan chan<- string) {
 			}
 
 			if uid != "" {
-				// Send the UID to the main thread for display
+				// Send the UID to the main thread for display or action
 				cardDetectedChan <- fmt.Sprintf("%s Card was read!", uid)
 			}
 
