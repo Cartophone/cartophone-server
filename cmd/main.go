@@ -3,28 +3,44 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
+	"time"
 
-	"cartophone-server/internal/api"  // Ensure this points to your internal API package
-	"cartophone-server/internal/nfc"  // Ensure this points to your internal NFC package
+	"cartophone-server/internal/nfc" // Import internal NFC package
 )
 
 func main() {
-	// Initialize NFC reader
-	reader, err := nfc.NewReader("pn532_i2c:/dev/i2c-1:0x24")
+	// Initialize the NFC reader
+	reader, err := nfc.NewReader("pn532_i2c:/dev/i2c-1:0x24") // Adjust based on your device
 	if err != nil {
 		log.Fatalf("Failed to initialize NFC reader: %v", err)
 	}
 	defer reader.Close()
 
-	// Set up the HTTP server and routes
-	http.HandleFunc("/register-card", api.RegisterCardHandler(reader))  // Register card handler
-	http.HandleFunc("/scan-card", api.ScanCardHandler(reader))          // Scan card handler
+	// Start polling for NFC tags
+	fmt.Println("NFC reader initialized. Scanning for NFC tags...")
 
-	// Start the server
-	fmt.Println("Starting the server on :8080")
-	err = http.ListenAndServe(":8080", nil)
-	if err != nil {
-		log.Fatalf("Error starting server: %v", err)
+	for {
+		// Define modulation types for polling (adjust this as needed)
+		modulations := []nfc.Modulation{
+			{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
+		}
+
+		// Poll for a target (NFC card/tag)
+		uid, err := reader.Scan(modulations, 10, 300*time.Millisecond) // 10 attempts, 300ms period
+		if err != nil {
+			log.Printf("Error scanning NFC tag: %v", err)
+			continue
+		}
+
+		if uid != "" {
+			// Print the detected NFC tag's UID
+			fmt.Printf("Tag detected! UID: %s\n", uid)
+		} else {
+			// No tag detected within the polling period
+			fmt.Println("No NFC tag detected.")
+		}
+
+		// Wait before polling again
+		time.Sleep(1 * time.Second)
 	}
 }
