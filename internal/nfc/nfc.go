@@ -27,8 +27,8 @@ func (r *Reader) Close() {
 	}
 }
 
-// StartPolling starts scanning NFC tags
-func (r *Reader) StartPolling(cardDetectedChan chan<- string) {
+// StartRead starts scanning NFC tags
+func (r *Reader) StartRead(cardDetectedChan chan<- string) {
 	modulations := []nfc.Modulation{
 		{Type: nfc.ISO14443a, BaudRate: nfc.Nbr106},
 	}

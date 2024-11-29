@@ -33,12 +33,12 @@ func main() {
 	cardDetectedChan := make(chan string)
 
 	// Start polling for NFC cards (use the device directly from reader)
-	go reader.StartPolling(cardDetectedChan) // Correct method name
+	go reader.StartRead(cardDetectedChan) // Fixed to StartRead instead of StartPolling
 
 	// Handle the /register endpoint to trigger register mode
 	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
 		// In register mode, wait for a card for 10 seconds
-		handlers.RegisterHandler(cardDetectedChan, w, r)
+		handlers.RegisterHandler(cardDetectedChan, w, r) // Make sure RegisterHandler is defined
 	})
 
 	// Start the HTTP server to listen for requests
@@ -47,10 +47,10 @@ func main() {
 	}()
 
 	// Start the register action in a separate goroutine
-	go handlers.HandleRegisterAction(cardDetectedChan)
+	go handlers.HandleRegisterAction(cardDetectedChan) // Make sure HandleRegisterAction is defined
 
 	// Start the read action in a separate goroutine
-	go handlers.HandleReadAction(cardDetectedChan)
+	go handlers.HandleReadAction(cardDetectedChan) // Make sure HandleReadAction is defined
 
 	// Main loop to handle detected cards
 	for {
