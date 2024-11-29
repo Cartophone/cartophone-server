@@ -12,6 +12,11 @@ import (
 )
 
 func main() {
+	// Display a nice start message
+	fmt.Println("Cartophone server is starting...")
+	fmt.Println("Welcome to Cartophone! Ready to scan NFC cards and interact with Owntone and Pocketbase.")
+	fmt.Println("Press Ctrl+C to stop the server.")
+
 	// Load the configuration from config.json
 	config, err := config.LoadConfig("config.json")
 	if err != nil {
@@ -42,7 +47,13 @@ func main() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
 
-	// Main loop to handle detected cards (this is for continuous scanning)
+	// Start the register action in a separate goroutine
+	go handlers.HandleRegisterAction(cardDetectedChan)
+
+	// Start the read action in a separate goroutine
+	go handlers.HandleReadAction(cardDetectedChan)
+
+	// Main loop to handle detected cards
 	for {
 		select {
 		case uid := <-cardDetectedChan:

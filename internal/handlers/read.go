@@ -2,18 +2,15 @@ package handlers
 
 import (
 	"fmt"
-	"cartophone-server/internal/nfc"
 )
 
-// ReadHandler handles the /read route
-func ReadHandler(cardDetectedChan <-chan string) {
-	// Listen for card UID and trigger the action (in the future, connect to Owntone)
+// HandleReadAction listens for detected card UID and simulates the "Play" action.
+func HandleReadAction(cardDetectedChan <-chan string) {
 	for {
 		select {
 		case uid := <-cardDetectedChan:
-			// Simulate the action of playing the card
+			// Simulate playing the card by printing a message to the console
 			fmt.Printf("Playing card %s\n", uid)
-			// Here you can add the logic to trigger Owntone API
 		}
 	}
 }

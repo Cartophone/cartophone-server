@@ -3,24 +3,15 @@ package handlers
 import (
 	"fmt"
 	"time"
-	"net/http"
-	"cartophone-server/internal/nfc" // Import the nfc package for register logic
 )
 
-// RegisterHandler handles the /register route
-func RegisterHandler(cardDetectedChan <-chan string, w http.ResponseWriter, r *http.Request) {
-	// In register mode, wait for a card for 10 seconds
-	// Create a timeout channel for 10 seconds
-	registerTimeout := time.After(10 * time.Second)
-
-	select {
-	case uid := <-cardDetectedChan:
-		// Card detected within 10 seconds
-		fmt.Println("Registering card", uid)
-		fmt.Fprintf(w, "Registering card %s\n", uid)
-	case <-registerTimeout:
-		// No card detected within 10 seconds
-		fmt.Println("No card detected")
-		fmt.Fprintf(w, "No card detected\n")
+// HandleRegisterAction listens for detected card UID and simulates the "Register" action.
+func HandleRegisterAction(cardDetectedChan <-chan string) {
+	for {
+		select {
+		case uid := <-cardDetectedChan:
+			// Simulate registering the card by printing a message to the console
+			fmt.Printf("Registering card %s\n", uid)
+		}
 	}
 }
