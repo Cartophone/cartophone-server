@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"cartophone-server/config"   // Import config package
+	"cartophone-server/config"      // Import config package
 	"cartophone-server/internal/nfc" // Import the internal nfc package
 	"cartophone-server/internal/handlers" // Import the internal handlers package
 )
@@ -33,8 +33,8 @@ func main() {
 	// Create a channel to receive NFC card UIDs asynchronously
 	cardDetectedChan := make(chan string)
 
-	// Start the read action that continuously scans for cards and triggers actions
-	go nfc.StartRead(cardDetectedChan, reader.device)
+	// Start polling for NFC cards (use the device directly from reader)
+	go reader.StartPolling(cardDetectedChan)
 
 	// Handle the /register endpoint to trigger register mode
 	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
