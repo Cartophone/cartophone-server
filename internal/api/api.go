@@ -1,15 +1,9 @@
 package api
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-	"time"
-
-	"cartophone-server/internal/nfc"
-	"cartophone-server/internal/owntone"
-	"cartophone-server/internal/pocketbase"
+    "log"
+    "net/http"
+    "cartophone-server/internal/nfc" // Ensure this import is correct
 )
 
 func RunNFCPoller(reader *nfc.Reader, pbClient *pocketbase.Client, otClient *owntone.Client) {
@@ -46,18 +40,18 @@ func RunAlarmMonitor(pbClient *pocketbase.Client, otClient *owntone.Client) {
 }
 
 func RegisterCardHandler(w http.ResponseWriter, r *http.Request, reader *nfc.Reader, pbClient *pocketbase.Client) {
-	uid, err := reader.RegisterMode(10 * time.Second)
-	if err != nil {
-		http.Error(w, "Failed to register card: "+err.Error(), http.StatusRequestTimeout)
-		return
-	}
+    uid, err := reader.RegisterMode(10 * time.Second)
+    if err != nil {
+        http.Error(w, "Failed to register card: "+err.Error(), http.StatusRequestTimeout)
+        return
+    }
 
-	data := map[string]string{"uid": uid}
-	json.NewEncoder(w).Encode(data)
+    data := map[string]string{"uid": uid}
+    json.NewEncoder(w).Encode(data)
 
-	if pbClient.UIDExists(uid) {
-		pbClient.UpdateUID(uid)
-	} else {
-		pbClient.RegisterUID(uid)
-	}
+    if pbClient.UIDExists(uid) {
+        pbClient.UpdateUID(uid)
+    } else {
+        pbClient.RegisterUID(uid)
+    }
 }
