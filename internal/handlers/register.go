@@ -21,8 +21,8 @@ func RegisterHandler(cardDetectedChan <-chan string, baseURL string, w http.Resp
 		fmt.Printf("Registering card %s\n", uid)
 
 		card := pocketbase.Card{
-			UID:      uid,
-			Playlist: "", // Add default or dynamic playlist if needed
+			UID:        uid,
+			PlaylistID: "", // Leave PlaylistID empty during registration
 		}
 
 		err := pocketbase.AddCard(baseURL, card)
