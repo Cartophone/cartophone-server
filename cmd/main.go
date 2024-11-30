@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"cartophone-server/config"
 	"cartophone-server/internal/nfc"
@@ -13,7 +14,7 @@ import (
 
 const (
 	ReadMode    = "read"
-	RegisterMode = "register"
+	AssociateMode = "associate"
 )
 
 func main() {
@@ -55,8 +56,8 @@ func main() {
 
 				if mode == ReadMode {
 					fmt.Println("Switched to Read Mode")
-				} else if mode == RegisterMode {
-					fmt.Println("Switched to Register Mode")
+				} else if mode == AssociateMode {
+					fmt.Println("Switched to Associate Mode")
 				}
 
 			case uid := <-cardDetectedChan:
@@ -64,8 +65,8 @@ func main() {
 				modeLock.Lock()
 				if currentMode == ReadMode {
 					handlers.HandleReadAction(uid, "http://127.0.0.1:8090")
-				} else if currentMode == RegisterMode {
-					fmt.Printf("Ignoring card %s because we are in Register Mode\n", uid)
+				} else if currentMode == AssociateMode {
+					fmt.Printf("Ignoring card %s because we are in Associate Mode\n", uid)
 				}
 				modeLock.Unlock()
 			}
@@ -75,32 +76,29 @@ func main() {
 	// Start polling for NFC cards
 	go reader.StartRead(cardDetectedChan)
 
-	// HTTP endpoint for register mode
-	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
+	// HTTP endpoint for associate mode
+	http.HandleFunc("/associate", func(w http.ResponseWriter, r *http.Request) {
 		modeLock.Lock()
-		if currentMode == RegisterMode {
-			fmt.Println("Already in register mode")
+		if currentMode == AssociateMode {
+			fmt.Println("Already in associate mode")
 			w.WriteHeader(http.StatusConflict)
-			fmt.Fprintf(w, "Already in register mode")
+			fmt.Fprintf(w, "Already in associate mode")
 			modeLock.Unlock()
 			return
 		}
 
-		currentMode = RegisterMode
+		currentMode = AssociateMode
 		modeLock.Unlock()
 
-		// Trigger register mode
-		modeSwitch <- RegisterMode
+		// Trigger associate mode
+		modeSwitch <- AssociateMode
 
-		// Handle the registration logic
-		handlers.RegisterHandler(cardDetectedChan, "http://127.0.0.1:8090", w, r)
+		// Handle the association logic
+		handlers.AssociateHandler(cardDetectedChan, "http://127.0.0.1:8090", w, r)
 
-		// Revert back to read mode after registration is complete
+		// Revert back to read mode after association is complete or timeout
+		time.Sleep(10 * time.Second)
 		modeSwitch <- ReadMode
-	})
-
-	http.HandleFunc("/associate", func(w http.ResponseWriter, r *http.Request) {
-		handlers.AssociateHandler("http://127.0.0.1:8090", w, r)
 	})
 
 	// Start the HTTP server
