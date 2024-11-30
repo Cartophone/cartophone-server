@@ -1,38 +1,69 @@
 package pocketbase
 
-type Client struct {
-	baseURL string
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+)
+
+type Card struct {
+	ID       string `json:"id,omitempty"`
+	UID      string `json:"uid"`
+	Playlist string `json:"playlist,omitempty"`
 }
 
-func NewClient(baseURL string) *Client {
-	return &Client{baseURL: baseURL}
+// CheckCard checks if a card exists in the PocketBase database
+func CheckCard(baseURL, uid string) (*Card, error) {
+	url := fmt.Sprintf("%s/api/collections/cards/records?filter=uid='%s'", baseURL, uid)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check card: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil // Card does not exist
+	} else if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected response: %s", string(body))
+	}
+
+	var result struct {
+		Items []Card `json:"items"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	if len(result.Items) == 0 {
+		return nil, nil // Card does not exist
+	}
+
+	return &result.Items[0], nil
 }
 
-func (c *Client) UIDExists(uid string) bool {
-	// Query PocketBase API for UID existence
-	return false
-}
+// AddCard adds a new card to the PocketBase database
+func AddCard(baseURL string, card Card) error {
+	url := fmt.Sprintf("%s/api/collections/cards/records", baseURL)
 
-func (c *Client) GetPlaylistForUID(uid string) (string, bool) {
-	// Query PocketBase API for playlist associated with UID
-	return "", false
-}
+	payload, err := json.Marshal(card)
+	if err != nil {
+		return fmt.Errorf("failed to marshal card: %w", err)
+	}
 
-func (c *Client) RegisterUID(uid string) {
-	// Register new UID in PocketBase
-}
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("failed to add card: %w", err)
+	}
+	defer resp.Body.Close()
 
-func (c *Client) UpdateUID(uid string) {
-	// Update existing UID in PocketBase
-}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected response: %s", string(body))
+	}
 
-func (c *Client) GetActiveAlarms() []Alarm {
-	// Fetch active alarms from PocketBase
-	return []Alarm{}
-}
-
-type Alarm struct {
-	Hour       int
-	Minute     int
-	PlaylistID string
+	return nil
 }

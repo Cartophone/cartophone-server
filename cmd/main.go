@@ -35,7 +35,7 @@ func main() {
 	}
 	defer reader.Close()
 
-	// Channels for communication
+	// Create channels for NFC card detection and mode switching
 	cardDetectedChan := make(chan string)
 	modeSwitch := make(chan string)
 
@@ -43,19 +43,29 @@ func main() {
 	var modeLock sync.Mutex
 	currentMode := ReadMode
 
-	// Goroutine to handle NFC reading
+	// Goroutine to manage NFC card detection and mode state
 	go func() {
 		for {
 			select {
 			case mode := <-modeSwitch:
+				// Update the mode state
 				modeLock.Lock()
 				currentMode = mode
 				modeLock.Unlock()
+
+				if mode == ReadMode {
+					fmt.Println("Switched to Read Mode")
+				} else if mode == RegisterMode {
+					fmt.Println("Switched to Register Mode")
+				}
+
 			case uid := <-cardDetectedChan:
+				// Handle card detection based on the current mode
 				modeLock.Lock()
 				if currentMode == ReadMode {
-					fmt.Printf("Detected card UID: %s\n", uid)
-					handlers.HandleReadAction(uid)
+					handlers.HandleReadAction(uid, "http://127.0.0.1:8090")
+				} else if currentMode == RegisterMode {
+					fmt.Printf("Ignoring card %s because we are in Register Mode\n", uid)
 				}
 				modeLock.Unlock()
 			}
@@ -75,15 +85,17 @@ func main() {
 			modeLock.Unlock()
 			return
 		}
+
 		currentMode = RegisterMode
 		modeLock.Unlock()
 
-		fmt.Println("Register mode activated. Waiting for a card...")
+		// Trigger register mode
 		modeSwitch <- RegisterMode
 
-		handlers.RegisterHandler(cardDetectedChan, w, r)
+		// Handle the registration logic
+		handlers.RegisterHandler(cardDetectedChan, "http://127.0.0.1:8090", w, r)
 
-		// Revert to read mode after registration
+		// Revert back to read mode after registration is complete
 		modeSwitch <- ReadMode
 	})
 
@@ -92,6 +104,6 @@ func main() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
 
-	// Main loop (blocks indefinitely)
+	// Main thread remains idle
 	select {}
 }
