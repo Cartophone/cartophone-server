@@ -1,13 +1,14 @@
 package handlers
 
 import (
-    "cartophone-server/internal/constants" // Import the constants package
-    "cartophone-server/internal/pocketbase"
-    "cartophone-server/internal/utils"
-    "encoding/json"
-    "fmt"
-    "net/http"
-    "time"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"time"
+
+	"cartophone-server/internal/constants"
+	"cartophone-server/internal/pocketbase"
+	"cartophone-server/internal/utils"
 )
 
 func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
@@ -33,7 +34,7 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 
 	// Send AssociateMode signal
 	select {
-	case modeSwitch <- AssociateMode:
+	case modeSwitch <- constants.AssociateMode:
 		fmt.Println("[DEBUG] Sent AssociateMode signal to modeSwitch")
 	default:
 		fmt.Println("[DEBUG] AssociateMode signal already sent")
@@ -94,7 +95,7 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 // Helper to switch back to ReadMode
 func switchToReadMode(modeSwitch chan string) {
 	select {
-	case modeSwitch <- ReadMode:
+	case modeSwitch <- constants.ReadMode:
 		fmt.Println("[DEBUG] Switching back to Read Mode")
 	default:
 		fmt.Println("[DEBUG] ReadMode signal already sent")
