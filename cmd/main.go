@@ -4,10 +4,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
-	"cartophone-server/config"      // Import config package
-	"cartophone-server/internal/nfc" // Import the internal nfc package
-	"cartophone-server/internal/handlers" // Import the internal handlers package
+	"cartophone-server/config"
+	"cartophone-server/internal/nfc"
+	"cartophone-server/internal/handlers"
+)
+
+const (
+	ReadMode    = "read"
+	RegisterMode = "register"
 )
 
 func main() {
@@ -23,51 +29,69 @@ func main() {
 	}
 
 	// Initialize the NFC reader using the device path from the config
-	reader, err := nfc.NewReader(config.DevicePath) // Use the loaded DevicePath
+	reader, err := nfc.NewReader(config.DevicePath)
 	if err != nil {
 		log.Fatalf("Failed to initialize NFC reader: %v", err)
 	}
 	defer reader.Close()
 
-	// Create a channel to receive NFC card UIDs asynchronously
+	// Channels for communication
 	cardDetectedChan := make(chan string)
+	modeSwitch := make(chan string)
 
-	// Create a mode switch channel to control the activation of read mode
-	modeSwitch := make(chan bool)
+	// Synchronization for mode state
+	var modeLock sync.Mutex
+	currentMode := ReadMode
 
-	// Start polling for NFC cards (use the device directly from reader)
+	// Goroutine to handle NFC reading
+	go func() {
+		for {
+			select {
+			case mode := <-modeSwitch:
+				modeLock.Lock()
+				currentMode = mode
+				modeLock.Unlock()
+			case uid := <-cardDetectedChan:
+				modeLock.Lock()
+				if currentMode == ReadMode {
+					fmt.Printf("Detected card UID: %s\n", uid)
+					handlers.HandleReadAction(uid)
+				}
+				modeLock.Unlock()
+			}
+		}
+	}()
+
+	// Start polling for NFC cards
 	go reader.StartRead(cardDetectedChan)
 
-	// Handle the /register endpoint to trigger register mode
+	// HTTP endpoint for register mode
 	http.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
-		// Activate register mode, suspend the reading action
-		fmt.Println("Register mode activated. Waiting for a card...")
-		modeSwitch <- false // Suspend the reading handler
+		modeLock.Lock()
+		if currentMode == RegisterMode {
+			fmt.Println("Already in register mode")
+			w.WriteHeader(http.StatusConflict)
+			fmt.Fprintf(w, "Already in register mode")
+			modeLock.Unlock()
+			return
+		}
+		currentMode = RegisterMode
+		modeLock.Unlock()
 
-		// Call the RegisterHandler
+		fmt.Println("Register mode activated. Waiting for a card...")
+		modeSwitch <- RegisterMode
+
 		handlers.RegisterHandler(cardDetectedChan, w, r)
 
-		// Reactivate the reading mode after registration is done
-		modeSwitch <- true // Re-enable the reading handler
+		// Revert to read mode after registration
+		modeSwitch <- ReadMode
 	})
 
-	// Start the HTTP server to listen for requests
+	// Start the HTTP server
 	go func() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
 
-	// Start the register action in a separate goroutine
-	go handlers.HandleRegisterAction(cardDetectedChan) // Ensure HandleRegisterAction is defined
-
-	// Start the read action in a separate goroutine
-	go handlers.HandleReadAction(cardDetectedChan, modeSwitch) // Ensure HandleReadAction is defined
-
-	// Main loop to handle detected cards
-	for {
-		select {
-		case uid := <-cardDetectedChan:
-			// Print the detected card message
-			fmt.Printf("Detected card UID: %s\n", uid)
-		}
-	}
+	// Main loop (blocks indefinitely)
+	select {}
 }
