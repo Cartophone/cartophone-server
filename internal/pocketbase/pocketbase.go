@@ -77,6 +77,35 @@ func AddCard(baseURL string, card Card) error {
 	return nil
 }
 
+// UpdateCard updates an existing card in PocketBase
+func UpdateCard(baseURL string, card Card) error {
+	url := fmt.Sprintf("%s/api/collections/cards/records/%s", baseURL, card.ID)
+
+	payload, err := json.Marshal(card)
+	if err != nil {
+		return fmt.Errorf("failed to marshal card: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("failed to create update request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update card: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected response: %s", resp.Status)
+	}
+
+	return nil
+}
+
 // GetPlaylist fetches a playlist by ID from the PocketBase database
 func GetPlaylist(baseURL, playlistID string) (*Playlist, error) {
 	url := fmt.Sprintf("%s/api/collections/playlists/records/%s", baseURL, playlistID)
