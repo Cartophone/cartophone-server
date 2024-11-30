@@ -45,33 +45,30 @@ func main() {
 	currentMode := ReadMode
 
 	// Goroutine to manage NFC card detection and mode state
-	go func() {
-		for {
-			select {
-			case mode := <-modeSwitch:
-				// Update the mode state
-				modeLock.Lock()
-				currentMode = mode
-				modeLock.Unlock()
+    go func() {
+        for {
+            select {
+            case mode := <-modeSwitch:
+                modeLock.Lock()
+                currentMode = mode
+                modeLock.Unlock()
 
-				if mode == ReadMode {
-					fmt.Println("Switched to Read Mode")
-				} else if mode == AssociateMode {
-					fmt.Println("Switched to Associate Mode")
-				}
+                if mode == ReadMode {
+                    fmt.Println("Switched to Read Mode")
+                } else if mode == AssociateMode {
+                    fmt.Println("Switched to Associate Mode")
+                }
 
-			case uid := <-cardDetectedChan:
-				// Handle card detection based on the current mode
-				modeLock.Lock()
-				if currentMode == ReadMode {
-					handlers.HandleReadAction(uid, "http://127.0.0.1:8090")
-				} else if currentMode == AssociateMode {
-					fmt.Printf("Ignoring card %s because we are in Associate Mode\n", uid)
-				}
-				modeLock.Unlock()
-			}
-		}
-	}()
+            case uid := <-cardDetectedChan:
+                modeLock.Lock()
+                if currentMode == ReadMode {
+                    handlers.HandleReadAction(uid, "http://127.0.0.1:8090")
+                }
+                // Do not log anything for AssociateMode
+                modeLock.Unlock()
+            }
+        }
+    }()
 
 	// Start polling for NFC cards
 	go reader.StartRead(cardDetectedChan)

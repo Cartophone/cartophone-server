@@ -27,9 +27,13 @@ func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.Res
 
 	fmt.Println("Associate mode activated. Waiting for a card...")
 
+	// Wait for a card scan or timeout
+	timer := time.NewTimer(10 * time.Second)
+	defer timer.Stop()
+
 	select {
 	case uid := <-cardDetectedChan:
-		// Check if the card exists in PocketBase
+		// Card detected, handle association logic
 		card, err := pocketbase.CheckCard(baseURL, uid)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error checking card: %v", err), http.StatusInternalServerError)
@@ -68,9 +72,10 @@ func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.Res
 		}
 
 		fmt.Fprintf(w, "Card %s associated with playlist %s successfully!\n", uid, payload.PlaylistID)
+		return
 
-	case <-time.After(10 * time.Second):
-		// Timeout waiting for a card
+	case <-timer.C:
+		// Timeout, no card detected
 		http.Error(w, "No card detected within 10 seconds", http.StatusRequestTimeout)
 	}
 }
