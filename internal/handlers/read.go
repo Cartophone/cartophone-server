@@ -22,7 +22,7 @@ func HandleReadAction(uid string, baseURL string) {
 	}
 
 	// Fetch the associated playlist
-	playlist, err := pocketbase.GetPlaylist(baseURL, card.PlaylistId)
+	playlist, err := pocketbase.GetPlaylist(baseURL, card.PlaylistID)
 	if err != nil {
 		fmt.Printf("Error fetching playlist: %v\n", err)
 		return
