@@ -1,26 +1,19 @@
-package handlers
-
-import (
-    "cartophone-server/internal/constants" // Import the constants package
-    "cartophone-server/internal/pocketbase"
-    "cartophone-server/internal/utils"
-    "encoding/json"
-    "fmt"
-    "net/http"
-    "time"
-)
-
 func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[DEBUG] AssociateHandler started. Processing request...")
 
-	// Use a flag to track if we've already switched back
-	switchedBack := false
-	defer func() {
-		if !switchedBack {
-			fmt.Println("[DEBUG] Switching back to Read Mode from defer")
+	// Track whether we've already switched back
+	modeSwitchedBack := false
+
+	switchToReadMode := func() {
+		if !modeSwitchedBack {
+			fmt.Println("[DEBUG] Switching back to Read Mode")
 			modeSwitch <- constants.ReadMode
+			modeSwitchedBack = true
 		}
-	}()
+	}
+
+	// Ensure we switch back to Read Mode in all cases
+	defer switchToReadMode()
 
 	// Parse playlist ID
 	var payload struct {
@@ -78,16 +71,8 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		utils.WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
 		fmt.Printf("[DEBUG] Card %s associated with playlist %s successfully. HTTP response sent.\n", uid, payload.PlaylistID)
 
-		// Mark mode as switched back
-		switchedBack = true
-		modeSwitch <- constants.ReadMode
-
 	case <-time.After(10 * time.Second):
 		utils.WriteResponse(w, http.StatusRequestTimeout, "No card detected within 10 seconds")
 		fmt.Println("[DEBUG] No card detected within the timeout period")
-
-		// Mark mode as switched back
-		switchedBack = true
-		modeSwitch <- constants.ReadMode
 	}
 }
