@@ -13,10 +13,14 @@ import (
 func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[DEBUG] AssociateHandler started. Processing request...")
 
-	// Ensure we switch back to read mode after this function completes
+	// Use a flag to track if we've already switched back to ReadMode
+	switchedBack := false
 	defer func() {
-		fmt.Println("[DEBUG] Switching back to Read Mode")
-		modeSwitch <- constants.ReadMode
+		if !switchedBack {
+			fmt.Println("[DEBUG] Switching back to Read Mode")
+			modeSwitch <- constants.ReadMode
+			switchedBack = true
+		}
 	}()
 
 	// Parse playlist ID

@@ -43,7 +43,9 @@ func main() {
         for {
             select {
             case mode := <-modeSwitch:
-                // Update the mode state
+                // Log every mode switch
+                fmt.Printf("[DEBUG] modeSwitch signal received: %s\n", mode)
+
                 modeLock.Lock()
                 currentMode = mode
                 modeLock.Unlock()
@@ -55,11 +57,11 @@ func main() {
                 }
 
             case uid := <-cardDetectedChan:
-                // Handle card detection based on the current mode
+                // Handle card detection in read mode
                 modeLock.Lock()
                 if currentMode == constants.ReadMode {
                     handlers.HandleReadAction(uid, "http://127.0.0.1:8090")
-                } else if currentMode == constants.AssociateMode {
+                } else {
                     fmt.Printf("Ignoring card %s because we are in Associate Mode\n", uid)
                 }
                 modeLock.Unlock()
