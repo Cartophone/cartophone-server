@@ -1,19 +1,14 @@
 package main
 
 import (
+    "cartophone-server/config"
+    "cartophone-server/internal/constants" // Import the constants package
+    "cartophone-server/internal/handlers"
+    "cartophone-server/internal/nfc"
     "fmt"
     "log"
     "net/http"
     "sync"
-
-    "cartophone-server/config"
-    "cartophone-server/internal/nfc"
-    "cartophone-server/internal/handlers"
-)
-
-const (
-    ReadMode      = "read"
-    AssociateMode = "associate"
 )
 
 func main() {
@@ -41,7 +36,7 @@ func main() {
 
     // Synchronization for mode state
     var modeLock sync.Mutex
-    currentMode := ReadMode
+    currentMode := constants.ReadMode
 
     // Goroutine to manage NFC card detection and mode state
     go func() {
@@ -53,18 +48,18 @@ func main() {
                 currentMode = mode
                 modeLock.Unlock()
 
-                if mode == ReadMode {
+                if mode == constants.ReadMode {
                     fmt.Println("Switched to Read Mode")
-                } else if mode == AssociateMode {
+                } else if mode == constants.AssociateMode {
                     fmt.Println("Switched to Associate Mode")
                 }
 
             case uid := <-cardDetectedChan:
                 // Handle card detection based on the current mode
                 modeLock.Lock()
-                if currentMode == ReadMode {
+                if currentMode == constants.ReadMode {
                     handlers.HandleReadAction(uid, "http://127.0.0.1:8090")
-                } else if currentMode == AssociateMode {
+                } else if currentMode == constants.AssociateMode {
                     fmt.Printf("Ignoring card %s because we are in Associate Mode\n", uid)
                 }
                 modeLock.Unlock()
@@ -78,7 +73,7 @@ func main() {
     // HTTP endpoint for associate mode
     http.HandleFunc("/associate", func(w http.ResponseWriter, r *http.Request) {
         modeLock.Lock()
-        if currentMode == AssociateMode {
+        if currentMode == constants.AssociateMode {
             fmt.Println("Already in associate mode")
             w.WriteHeader(http.StatusConflict)
             fmt.Fprintf(w, "Already in associate mode")
@@ -86,17 +81,17 @@ func main() {
             return
         }
 
-        currentMode = AssociateMode
+        currentMode = constants.AssociateMode
         modeLock.Unlock()
 
         // Trigger associate mode
-        modeSwitch <- AssociateMode
+        modeSwitch <- constants.AssociateMode
 
         // Handle the association logic
         handlers.AssociateHandler(cardDetectedChan, modeSwitch, "http://127.0.0.1:8090", w, r)
 
         // Revert back to read mode after association is complete
-        modeSwitch <- ReadMode
+        modeSwitch <- constants.ReadMode
     })
 
     // Start the HTTP server
