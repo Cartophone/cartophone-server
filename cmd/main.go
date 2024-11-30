@@ -54,6 +54,8 @@ func main() {
                     } else if mode == constants.AssociateMode {
                         fmt.Println("[DEBUG] Switched to Associate Mode")
                     }
+                } else {
+                    fmt.Printf("[DEBUG] Ignoring duplicate signal for mode: %s\n", mode)
                 }
                 modeLock.Unlock()
 
