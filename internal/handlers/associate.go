@@ -1,12 +1,13 @@
 package handlers
 
 import (
-    "cartophone-server/internal/utils"
-    "cartophone-server/internal/pocketbase"
-    "encoding/json"
-    "fmt"
-    "net/http"
-    "time"
+	"cartophone-server/internal/pocketbase"
+	"cartophone-server/internal/utils"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"sync"
+	"time"
 )
 
 func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
@@ -26,47 +27,53 @@ func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.Res
 
 	fmt.Println("Associate mode activated. Waiting for a card...")
 
-	select {
-	case uid := <-cardDetectedChan:
-		fmt.Printf("Detected card UID in associate mode: %s\n", uid)
+	// Use a WaitGroup to ensure response is handled exactly once
+	var wg sync.WaitGroup
+	wg.Add(1)
 
-		card, err := pocketbase.CheckCard(baseURL, uid)
-		if err != nil {
-			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error checking card: %v", err))
-			return
-		}
+	go func() {
+		defer wg.Done()
 
-		if card != nil {
-			if card.PlaylistID == "" {
-				card.PlaylistID = payload.PlaylistID
-				err = pocketbase.UpdateCard(baseURL, *card)
-				if err != nil {
-					utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error updating card: %v", err))
-					return
-				}
-				utils.WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
-				return
-			} else if card.PlaylistID == payload.PlaylistID {
-				utils.WriteResponse(w, http.StatusConflict, "Card is already associated with this playlist")
-				return
-			} else {
-				utils.WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
+		select {
+		case uid := <-cardDetectedChan:
+			fmt.Printf("Detected card UID in associate mode: %s\n", uid)
+
+			// Check if the card exists in PocketBase
+			card, err := pocketbase.CheckCard(baseURL, uid)
+			if err != nil {
+				utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error checking card: %v", err))
 				return
 			}
-		}
 
-		newCard := pocketbase.Card{
-			UID:        uid,
-			PlaylistID: payload.PlaylistID,
-		}
-		err = pocketbase.AddCard(baseURL, newCard)
-		if err != nil {
-			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error adding card: %v", err))
+			if card != nil && card.PlaylistID != "" {
+				if card.PlaylistID == payload.PlaylistID {
+					utils.WriteResponse(w, http.StatusConflict, "Card is already associated with this playlist")
+				} else {
+					utils.WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
+				}
+				return
+			}
+
+			// Add or update the card
+			newCard := pocketbase.Card{
+				UID:        uid,
+				PlaylistID: payload.PlaylistID,
+			}
+			err = pocketbase.AddCard(baseURL, newCard)
+			if err != nil {
+				utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error adding card: %v", err))
+				return
+			}
+
+			utils.WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
+			return
+
+		case <-time.After(10 * time.Second):
+			utils.WriteResponse(w, http.StatusRequestTimeout, "No card detected within 10 seconds")
 			return
 		}
-		utils.WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
+	}()
 
-	case <-time.After(10 * time.Second):
-		utils.WriteResponse(w, http.StatusRequestTimeout, "No card detected within 10 seconds")
-	}
+	// Wait for the goroutine to finish before exiting the handler
+	wg.Wait()
 }
