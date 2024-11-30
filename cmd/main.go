@@ -51,18 +51,19 @@ func main() {
                 modeLock.Unlock()
 
                 if mode == constants.ReadMode {
-                    fmt.Println("Switched to Read Mode")
+                    fmt.Println("[DEBUG] Switched to Read Mode")
                 } else if mode == constants.AssociateMode {
-                    fmt.Println("Switched to Associate Mode")
+                    fmt.Println("[DEBUG] Switched to Associate Mode")
                 }
 
             case uid := <-cardDetectedChan:
                 // Handle card detection in read mode
                 modeLock.Lock()
                 if currentMode == constants.ReadMode {
+                    fmt.Printf("[DEBUG] Detected card in Read Mode: %s\n", uid)
                     handlers.HandleReadAction(uid, "http://127.0.0.1:8090")
                 } else {
-                    fmt.Printf("Ignoring card %s because we are in Associate Mode\n", uid)
+                    fmt.Printf("[DEBUG] Ignoring card %s because we are in Associate Mode\n", uid)
                 }
                 modeLock.Unlock()
             }
