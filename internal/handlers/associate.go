@@ -9,42 +9,54 @@ import (
 	"time"
 )
 
-// AssociateHandler handles associating a card with a playlist
 func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("[DEBUG] AssociateHandler started. Processing request...")
+
 	// Parse playlist ID
 	var payload struct {
 		PlaylistID string `json:"playlistId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		utils.WriteResponse(w, http.StatusBadRequest, "Invalid request payload")
+		fmt.Println("[DEBUG] Invalid request payload. Exiting handler.")
 		return
 	}
 
 	if payload.PlaylistID == "" {
 		utils.WriteResponse(w, http.StatusBadRequest, "Playlist ID is required")
+		fmt.Println("[DEBUG] Playlist ID is missing in the request payload. Exiting handler.")
 		return
 	}
 
-	fmt.Println("Associate mode activated. Waiting for a card...")
+	fmt.Printf("[DEBUG] Associate mode activated. Waiting for a card to associate with playlist ID: %s\n", payload.PlaylistID)
 
+	// Flag to ensure we only send one HTTP response
+	responseSent := false
+
+	// Main detection logic
 	select {
 	case uid := <-cardDetectedChan:
-		fmt.Printf("Detected card UID in associate mode: %s\n", uid)
+		fmt.Printf("[DEBUG] Card detected with UID: %s\n", uid)
 
 		// Check if the card exists in PocketBase
 		card, err := pocketbase.CheckCard(baseURL, uid)
 		if err != nil {
+			fmt.Printf("[DEBUG] Error checking card in PocketBase: %v\n", err)
 			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error checking card: %v", err))
-			return
+			responseSent = true
+			break
 		}
 
 		if card != nil && card.PlaylistID != "" {
 			if card.PlaylistID == payload.PlaylistID {
 				utils.WriteResponse(w, http.StatusConflict, "Card is already associated with this playlist")
+				fmt.Printf("[DEBUG] Card %s is already associated with playlist %s\n", uid, payload.PlaylistID)
 			} else {
 				utils.WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
+				fmt.Printf("[DEBUG] Card %s is already associated with another playlist\n", uid)
 			}
-			return
+			responseSent = true
+			break
 		}
 
 		// Add or update the card
@@ -54,15 +66,24 @@ func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.Res
 		}
 		err = pocketbase.AddCard(baseURL, newCard)
 		if err != nil {
+			fmt.Printf("[DEBUG] Error adding card to PocketBase: %v\n", err)
 			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error adding card: %v", err))
-			return
+			responseSent = true
+			break
 		}
 
 		utils.WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
-		return
+		fmt.Printf("[DEBUG] Card %s associated with playlist %s successfully. HTTP response sent.\n", uid, payload.PlaylistID)
+		responseSent = true
 
 	case <-time.After(10 * time.Second):
+		fmt.Println("[DEBUG] No card detected within 10 seconds. Sending timeout response.")
 		utils.WriteResponse(w, http.StatusRequestTimeout, "No card detected within 10 seconds")
-		return
+		responseSent = true
 	}
+
+	if !responseSent {
+		fmt.Println("[DEBUG] Exiting AssociateHandler without sending a response (unexpected case).")
+	}
+	fmt.Println("[DEBUG] AssociateHandler completed.")
 }
