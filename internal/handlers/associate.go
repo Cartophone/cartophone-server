@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
+func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[DEBUG] AssociateHandler started. Processing request...")
 
 	// Parse playlist ID
@@ -28,23 +28,23 @@ func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.Res
 		return
 	}
 
+	// Switch to associate mode
+	fmt.Println("[DEBUG] Switching to Associate Mode")
+	modeSwitch <- "associate"
+
+	// Start waiting for a card
 	fmt.Printf("[DEBUG] Associate mode activated. Waiting for a card to associate with playlist ID: %s\n", payload.PlaylistID)
-
-	// Flag to ensure we only send one HTTP response
-	responseSent := false
-
-	// Main detection logic
 	select {
 	case uid := <-cardDetectedChan:
-		fmt.Printf("[DEBUG] Card detected with UID: %s\n", uid)
+		fmt.Printf("[DEBUG] Detected card UID in associate mode: %s\n", uid)
 
 		// Check if the card exists in PocketBase
 		card, err := pocketbase.CheckCard(baseURL, uid)
 		if err != nil {
-			fmt.Printf("[DEBUG] Error checking card in PocketBase: %v\n", err)
 			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error checking card: %v", err))
-			responseSent = true
-			break
+			fmt.Printf("[DEBUG] Error checking card in PocketBase: %v\n", err)
+			modeSwitch <- "read" // Switch back to read mode
+			return
 		}
 
 		if card != nil && card.PlaylistID != "" {
@@ -55,8 +55,8 @@ func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.Res
 				utils.WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
 				fmt.Printf("[DEBUG] Card %s is already associated with another playlist\n", uid)
 			}
-			responseSent = true
-			break
+			modeSwitch <- "read" // Switch back to read mode
+			return
 		}
 
 		// Add or update the card
@@ -66,24 +66,19 @@ func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.Res
 		}
 		err = pocketbase.AddCard(baseURL, newCard)
 		if err != nil {
-			fmt.Printf("[DEBUG] Error adding card to PocketBase: %v\n", err)
 			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error adding card: %v", err))
-			responseSent = true
-			break
+			fmt.Printf("[DEBUG] Error adding card to PocketBase: %v\n", err)
+			modeSwitch <- "read" // Switch back to read mode
+			return
 		}
 
 		utils.WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
 		fmt.Printf("[DEBUG] Card %s associated with playlist %s successfully. HTTP response sent.\n", uid, payload.PlaylistID)
-		responseSent = true
+		modeSwitch <- "read" // Switch back to read mode
 
 	case <-time.After(10 * time.Second):
-		fmt.Println("[DEBUG] No card detected within 10 seconds. Sending timeout response.")
 		utils.WriteResponse(w, http.StatusRequestTimeout, "No card detected within 10 seconds")
-		responseSent = true
+		fmt.Println("[DEBUG] No card detected within the timeout period")
+		modeSwitch <- "read" // Switch back to read mode
 	}
-
-	if !responseSent {
-		fmt.Println("[DEBUG] Exiting AssociateHandler without sending a response (unexpected case).")
-	}
-	fmt.Println("[DEBUG] AssociateHandler completed.")
 }
