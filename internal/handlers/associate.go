@@ -1,3 +1,15 @@
+package handlers
+
+import (
+    "cartophone-server/internal/constants" // Import the constants package
+    "cartophone-server/internal/pocketbase"
+    "cartophone-server/internal/utils"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "time"
+)
+
 func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[DEBUG] AssociateHandler started. Processing request...")
 
