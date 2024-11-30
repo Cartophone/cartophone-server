@@ -99,6 +99,10 @@ func main() {
 		modeSwitch <- ReadMode
 	})
 
+	http.HandleFunc("/associate", func(w http.ResponseWriter, r *http.Request) {
+		handlers.AssociateHandler("http://127.0.0.1:8090", w, r)
+	})
+
 	// Start the HTTP server
 	go func() {
 		log.Fatal(http.ListenAndServe(":8080", nil))

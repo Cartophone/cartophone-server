@@ -6,7 +6,7 @@ import (
 	"cartophone-server/internal/pocketbase"
 )
 
-// HandleReadAction simulates the "Play" action for a detected card.
+// HandleReadAction plays the associated playlist when a card is scanned
 func HandleReadAction(uid string, baseURL string) {
 	fmt.Printf("Detected card UID: %s\n", uid)
 
@@ -21,6 +21,13 @@ func HandleReadAction(uid string, baseURL string) {
 		return
 	}
 
-	// Access the Playlist field
-	fmt.Printf("Playing playlist: %s for card UID: %s\n", card.Playlist, uid)
+	// Fetch the associated playlist
+	playlist, err := pocketbase.GetPlaylist(baseURL, card.Playlist)
+	if err != nil {
+		fmt.Printf("Error fetching playlist: %v\n", err)
+		return
+	}
+
+	// Simulate playing the playlist
+	fmt.Printf("Playing playlist '%s' with URI: %s\n", playlist.Name, playlist.URI)
 }
