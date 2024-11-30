@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"cartophone-server/handlers/utils"
+	"cartophone-server/internal/utils"
 	"cartophone-server/internal/pocketbase"
 )
 
