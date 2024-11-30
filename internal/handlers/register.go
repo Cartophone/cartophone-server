@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"cartophone-server/internal/pocketbase"
+	"time"
 )
 
 // RegisterHandler listens for detected card UID and registers it in PocketBase.
