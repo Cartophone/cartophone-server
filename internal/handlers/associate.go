@@ -13,13 +13,13 @@ import (
 func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[DEBUG] AssociateHandler started. Processing request...")
 
-	// Use a flag to track if we've already switched back to ReadMode
-	switchedBack := false
+	// Use a flag to track if the mode has already been switched
+	modeSwitchedBack := false
 	defer func() {
-		if !switchedBack {
+		if !modeSwitchedBack {
 			fmt.Println("[DEBUG] Switching back to Read Mode")
 			modeSwitch <- constants.ReadMode
-			switchedBack = true
+			modeSwitchedBack = true
 		}
 	}()
 
