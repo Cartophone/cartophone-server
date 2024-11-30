@@ -20,14 +20,12 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		utils.WriteResponse(w, http.StatusBadRequest, "Invalid request payload")
 		fmt.Println("[DEBUG] Invalid request payload. Exiting handler.")
-		modeSwitch <- constants.ReadMode // Ensure fallback
 		return
 	}
 
 	if payload.PlaylistID == "" {
 		utils.WriteResponse(w, http.StatusBadRequest, "Playlist ID is required")
 		fmt.Println("[DEBUG] Playlist ID is missing in the request payload. Exiting handler.")
-		modeSwitch <- constants.ReadMode // Ensure fallback
 		return
 	}
 
@@ -41,6 +39,7 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		fmt.Println("[DEBUG] AssociateMode signal already sent")
 	}
 
+	// Listen for a card or timeout
 	select {
 	case uid := <-cardDetectedChan:
 		fmt.Printf("[DEBUG] Detected card UID in associate mode: %s\n", uid)
@@ -50,7 +49,6 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		if err != nil {
 			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error checking card: %v", err))
 			fmt.Printf("[DEBUG] Error checking card in PocketBase: %v\n", err)
-			modeSwitch <- constants.ReadMode // Ensure fallback
 			return
 		}
 
@@ -62,7 +60,6 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 				utils.WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
 				fmt.Printf("[DEBUG] Card %s is already associated with another playlist\n", uid)
 			}
-			modeSwitch <- constants.ReadMode // Ensure fallback
 			return
 		}
 
@@ -75,7 +72,6 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		if err != nil {
 			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error adding card: %v", err))
 			fmt.Printf("[DEBUG] Error adding card to PocketBase: %v\n", err)
-			modeSwitch <- constants.ReadMode // Ensure fallback
 			return
 		}
 
@@ -87,7 +83,11 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		fmt.Println("[DEBUG] No card detected within the timeout period")
 	}
 
-	// Ensure a single switch back to Read Mode
-	modeSwitch <- constants.ReadMode
-	fmt.Println("[DEBUG] Switching back to Read Mode")
+	// Explicitly switch back to ReadMode only once
+	select {
+	case modeSwitch <- constants.ReadMode:
+		fmt.Println("[DEBUG] Switching back to Read Mode")
+	default:
+		fmt.Println("[DEBUG] ReadMode signal already sent")
+	}
 }
