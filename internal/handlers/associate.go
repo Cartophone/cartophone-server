@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// AssociateHandler handles associating a card with a playlist
 func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[DEBUG] AssociateHandler started. Processing request...")
 
@@ -28,12 +29,8 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		return
 	}
 
-	// Switch to associate mode
-	fmt.Println("[DEBUG] Switching to Associate Mode")
-	modeSwitch <- "associate"
-
-	// Start waiting for a card
 	fmt.Printf("[DEBUG] Associate mode activated. Waiting for a card to associate with playlist ID: %s\n", payload.PlaylistID)
+
 	select {
 	case uid := <-cardDetectedChan:
 		fmt.Printf("[DEBUG] Detected card UID in associate mode: %s\n", uid)
@@ -43,7 +40,7 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		if err != nil {
 			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error checking card: %v", err))
 			fmt.Printf("[DEBUG] Error checking card in PocketBase: %v\n", err)
-			modeSwitch <- "read" // Switch back to read mode
+			modeSwitch <- ReadMode // Switch back to read mode
 			return
 		}
 
@@ -55,7 +52,7 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 				utils.WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
 				fmt.Printf("[DEBUG] Card %s is already associated with another playlist\n", uid)
 			}
-			modeSwitch <- "read" // Switch back to read mode
+			modeSwitch <- ReadMode // Switch back to read mode
 			return
 		}
 
@@ -68,17 +65,17 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		if err != nil {
 			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error adding card: %v", err))
 			fmt.Printf("[DEBUG] Error adding card to PocketBase: %v\n", err)
-			modeSwitch <- "read" // Switch back to read mode
+			modeSwitch <- ReadMode // Switch back to read mode
 			return
 		}
 
 		utils.WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
 		fmt.Printf("[DEBUG] Card %s associated with playlist %s successfully. HTTP response sent.\n", uid, payload.PlaylistID)
-		modeSwitch <- "read" // Switch back to read mode
+		modeSwitch <- ReadMode // Switch back to read mode
 
 	case <-time.After(10 * time.Second):
 		utils.WriteResponse(w, http.StatusRequestTimeout, "No card detected within 10 seconds")
 		fmt.Println("[DEBUG] No card detected within the timeout period")
-		modeSwitch <- "read" // Switch back to read mode
+		modeSwitch <- ReadMode // Switch back to read mode
 	}
 }
