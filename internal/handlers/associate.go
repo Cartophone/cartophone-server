@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 
+	"cartophone-server/handlers/utils"
 	"cartophone-server/internal/pocketbase"
 )
 
@@ -16,18 +18,17 @@ func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.Res
 		PlaylistID string `json:"playlistId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		writeResponse(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	if payload.PlaylistID == "" {
-		http.Error(w, "Playlist ID is required", http.StatusBadRequest)
+		writeResponse(w, http.StatusBadRequest, "Playlist ID is required")
 		return
 	}
 
 	fmt.Println("Associate mode activated. Waiting for a card...")
 
-	// Wait for card or timeout
 	select {
 	case uid := <-cardDetectedChan:
 		fmt.Printf("Detected card UID in associate mode: %s\n", uid)
@@ -35,48 +36,36 @@ func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.Res
 		// Check if the card exists in PocketBase
 		card, err := pocketbase.CheckCard(baseURL, uid)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error checking card: %v", err), http.StatusInternalServerError)
+			writeResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error checking card: %v", err))
 			return
 		}
 
-		if card != nil {
-			if card.PlaylistID == "" {
-				// Update the card with the new PlaylistID
-				card.PlaylistID = payload.PlaylistID
-				err = pocketbase.UpdateCard(baseURL, *card)
-				if err != nil {
-					http.Error(w, fmt.Sprintf("Error updating card: %v", err), http.StatusInternalServerError)
-					return
-				}
-				fmt.Fprintf(w, "Card %s associated with playlist %s successfully!\n", uid, payload.PlaylistID)
-				return
-			} else if card.PlaylistID == payload.PlaylistID {
-				http.Error(w, "Card is already associated with this playlist", http.StatusConflict)
-				return
+		if card != nil && card.PlaylistID != "" {
+			if card.PlaylistID == payload.PlaylistID {
+				writeResponse(w, http.StatusConflict, "Card is already associated with this playlist")
 			} else {
-				http.Error(w, "Card is already associated with another playlist", http.StatusConflict)
-				return
+				writeResponse(w, http.StatusConflict, "Card is already associated with another playlist")
 			}
-		}
-
-		// If the card does not exist, create a new one and associate it with the playlist
-		newCard := pocketbase.Card{
-			UID:        uid,
-			PlaylistID: payload.PlaylistID,
-		}
-		err = pocketbase.AddCard(baseURL, newCard)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error adding card: %v", err), http.StatusInternalServerError)
 			return
 		}
 
-		fmt.Fprintf(w, "Card %s associated with playlist %s successfully!\n", uid, payload.PlaylistID)
+		// Add or update the card
+		newCard := pocketbase.Card{UID: uid, PlaylistID: payload.PlaylistID}
+		if card == nil {
+			err = pocketbase.AddCard(baseURL, newCard)
+		} else {
+			card.PlaylistID = payload.PlaylistID
+			err = pocketbase.UpdateCard(baseURL, *card)
+		}
+		if err != nil {
+			writeResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error updating card: %v", err))
+			return
+		}
+
+		writeResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
 		return
 
 	case <-time.After(10 * time.Second):
-		// Timeout, no card detected
-		fmt.Println("No card detected within the timeout period")
-		http.Error(w, "No card detected within 10 seconds", http.StatusRequestTimeout)
-		return
+		writeResponse(w, http.StatusRequestTimeout, "No card detected within 10 seconds")
 	}
 }
