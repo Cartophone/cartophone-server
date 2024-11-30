@@ -1,15 +1,19 @@
 package pocketbase
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 )
 
+// Card represents a card record in the PocketBase database
 type Card struct {
-	ID  string `json:"id"`
-	UID string `json:"uid"`
+	ID       string `json:"id"`
+	UID      string `json:"uid"`
+	Playlist string `json:"playlist"` // Field for the associated playlist
 }
 
 // CheckCard checks if a card exists in the PocketBase database
@@ -45,4 +49,27 @@ func CheckCard(baseURL, uid string) (*Card, error) {
 
 	// Return the first matching card
 	return &result.Items[0], nil
+}
+
+// AddCard adds a new card to the PocketBase database
+func AddCard(baseURL string, card Card) error {
+	url := fmt.Sprintf("%s/api/collections/cards/records", baseURL)
+
+	payload, err := json.Marshal(card)
+	if err != nil {
+		return fmt.Errorf("failed to marshal card: %w", err)
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("failed to add card: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected response: %s", string(body))
+	}
+
+	return nil
 }

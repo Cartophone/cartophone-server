@@ -3,11 +3,12 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"cartophone-server/internal/pocketbase"
 	"time"
+
+	"cartophone-server/internal/pocketbase"
 )
 
-// RegisterHandler listens for detected card UID and registers it in PocketBase.
+// RegisterHandler adds a new card to the PocketBase database
 func RegisterHandler(cardDetectedChan <-chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Register mode activated. Waiting for a card...")
 
@@ -20,7 +21,8 @@ func RegisterHandler(cardDetectedChan <-chan string, baseURL string, w http.Resp
 		fmt.Printf("Registering card %s\n", uid)
 
 		card := pocketbase.Card{
-			UID: uid,
+			UID:      uid,
+			Playlist: "", // Add default or dynamic playlist if needed
 		}
 
 		err := pocketbase.AddCard(baseURL, card)
