@@ -47,14 +47,15 @@ func main() {
                 fmt.Printf("[DEBUG] modeSwitch signal received: %s\n", mode)
 
                 modeLock.Lock()
-                currentMode = mode
-                modeLock.Unlock()
-
-                if mode == constants.ReadMode {
-                    fmt.Println("[DEBUG] Switched to Read Mode")
-                } else if mode == constants.AssociateMode {
-                    fmt.Println("[DEBUG] Switched to Associate Mode")
+                if currentMode != mode {
+                    currentMode = mode
+                    if mode == constants.ReadMode {
+                        fmt.Println("[DEBUG] Switched to Read Mode")
+                    } else if mode == constants.AssociateMode {
+                        fmt.Println("[DEBUG] Switched to Associate Mode")
+                    }
                 }
+                modeLock.Unlock()
 
             case uid := <-cardDetectedChan:
                 // Handle card detection in read mode

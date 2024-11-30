@@ -13,7 +13,7 @@ import (
 func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[DEBUG] AssociateHandler started. Processing request...")
 
-	// Track whether we've already switched back
+	// Use a flag to ensure a single mode switch
 	modeSwitchedBack := false
 
 	switchToReadMode := func() {
@@ -24,7 +24,7 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		}
 	}
 
-	// Ensure we switch back to Read Mode in all cases
+	// Ensure mode always switches back to Read Mode
 	defer switchToReadMode()
 
 	// Parse playlist ID
@@ -44,6 +44,9 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 	}
 
 	fmt.Printf("[DEBUG] Associate mode activated. Waiting for a card to associate with playlist ID: %s\n", payload.PlaylistID)
+
+	// Set mode to associate
+	modeSwitch <- constants.AssociateMode
 
 	select {
 	case uid := <-cardDetectedChan:
