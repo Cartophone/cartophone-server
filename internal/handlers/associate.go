@@ -33,7 +33,7 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 
 	// Send AssociateMode signal
 	select {
-	case modeSwitch <- constants.AssociateMode:
+	case modeSwitch <- AssociateMode:
 		fmt.Println("[DEBUG] Sent AssociateMode signal to modeSwitch")
 	default:
 		fmt.Println("[DEBUG] AssociateMode signal already sent")
@@ -60,6 +60,8 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 				utils.WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
 				fmt.Printf("[DEBUG] Card %s is already associated with another playlist\n", uid)
 			}
+			// Switch back to ReadMode after handling
+			switchToReadMode(modeSwitch)
 			return
 		}
 
@@ -72,6 +74,8 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		if err != nil {
 			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error adding card: %v", err))
 			fmt.Printf("[DEBUG] Error adding card to PocketBase: %v\n", err)
+			// Switch back to ReadMode after handling
+			switchToReadMode(modeSwitch)
 			return
 		}
 
@@ -83,9 +87,14 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		fmt.Println("[DEBUG] No card detected within the timeout period")
 	}
 
-	// Switch back to ReadMode
+	// Ensure we switch back to ReadMode
+	switchToReadMode(modeSwitch)
+}
+
+// Helper to switch back to ReadMode
+func switchToReadMode(modeSwitch chan string) {
 	select {
-	case modeSwitch <- constants.ReadMode:
+	case modeSwitch <- ReadMode:
 		fmt.Println("[DEBUG] Switching back to Read Mode")
 	default:
 		fmt.Println("[DEBUG] ReadMode signal already sent")
