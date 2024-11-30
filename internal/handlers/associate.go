@@ -1,13 +1,12 @@
 package handlers
 
 import (
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"time"
-
-	"cartophone-server/internal/pocketbase"
-	"cartophone-server/internal/utils"
+    "cartophone-server/internal/utils"
+    "cartophone-server/internal/pocketbase"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "time"
 )
 
 func AssociateHandler(cardDetectedChan <-chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
