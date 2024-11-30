@@ -29,9 +29,9 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		return
 	}
 
-	fmt.Printf("[DEBUG] Associate mode activated. Waiting for a card to associate with playlist ID: %s\n", payload.PlaylistID)
+	fmt.Printf("[DEBUG] Associate mode requested. Playlist ID: %s\n", payload.PlaylistID)
 
-	// Send AssociateMode signal only once
+	// Send AssociateMode signal
 	select {
 	case modeSwitch <- constants.AssociateMode:
 		fmt.Println("[DEBUG] Sent AssociateMode signal to modeSwitch")
@@ -83,7 +83,7 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		fmt.Println("[DEBUG] No card detected within the timeout period")
 	}
 
-	// Explicitly switch back to ReadMode only once
+	// Switch back to ReadMode
 	select {
 	case modeSwitch <- constants.ReadMode:
 		fmt.Println("[DEBUG] Switching back to Read Mode")
