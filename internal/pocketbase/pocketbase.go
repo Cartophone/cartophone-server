@@ -137,26 +137,27 @@ func GetPlaylist(baseURL, playlistID string) (*Playlist, error) {
 	return &playlist, nil
 }
 
-// FetchActiveAlarms fetches all active alarms from PocketBase
-func FetchActiveAlarms(baseURL string) ([]Alarm, error) {
-	url := fmt.Sprintf("%s/api/collections/alarms/records?filter=activated=true", baseURL)
+// FetchActiveAlarms fetches all active alarms for a specific time.
+func FetchActiveAlarms(baseURL, currentTime string) ([]Alarm, error) {
+	url := fmt.Sprintf("%s/api/collections/alarms/records?filter=hour='%s'&&activated=true", baseURL, currentTime)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch active alarms: %v", err)
+		return nil, fmt.Errorf("failed to fetch alarms: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected response: %s", resp.Status)
+		body, _ := ioutil.ReadAll(resp.Body)
+		return nil, fmt.Errorf("unexpected response: %s", string(body))
 	}
 
-	var result struct {
+	var response struct {
 		Items []Alarm `json:"items"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, fmt.Errorf("failed to parse active alarms: %v", err)
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode alarms response: %w", err)
 	}
 
-	return result.Items, nil
+	return response.Items, nil
 }
