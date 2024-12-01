@@ -14,7 +14,7 @@ func StartAlarmChecker(baseURL string) {
 			now := time.Now()
 			currentTime := fmt.Sprintf("%02d:%02d", now.Hour(), now.Minute())
 
-			alarms, err := pocketbase.GetActivatedAlarms(baseURL, currentTime)
+			alarms, err := pocketbase.FetchActiveAlarms(baseURL, currentTime)
 			if err != nil {
 				fmt.Printf("[ERROR] Failed to fetch activated alarms: %v\n", err)
 				time.Sleep(1 * time.Minute) // Retry after a minute
