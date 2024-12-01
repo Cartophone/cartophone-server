@@ -53,7 +53,7 @@ func main() {
     go reader.StartRead(cardDetectedChan)
 
     // Start the alarm checker from utils
-    utils.StartAlarmChecker(config.PocketBaseURL)
+    alarms.StartAlarmChecker(config.PocketBaseURL)
 
     http.HandleFunc("/associate", func(w http.ResponseWriter, r *http.Request) {
         handlers.AssociateHandler(cardDetectedChan, modeSwitch, config.PocketBaseURL, w, r)

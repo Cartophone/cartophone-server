@@ -1,3 +1,4 @@
+
 package handlers
 
 import (
@@ -19,13 +20,13 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		PlaylistID string `json:"playlistId"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, "Invalid request payload")
+		WriteResponse(w, http.StatusBadRequest, "Invalid request payload")
 		fmt.Println("[DEBUG] Invalid request payload. Exiting handler.")
 		return
 	}
 
 	if payload.PlaylistID == "" {
-		utils.WriteResponse(w, http.StatusBadRequest, "Playlist ID is required")
+		WriteResponse(w, http.StatusBadRequest, "Playlist ID is required")
 		fmt.Println("[DEBUG] Playlist ID is missing in the request payload. Exiting handler.")
 		return
 	}
@@ -48,17 +49,17 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		// Check if the card exists in PocketBase
 		card, err := pocketbase.CheckCard(baseURL, uid)
 		if err != nil {
-			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error checking card: %v", err))
+			WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error checking card: %v", err))
 			fmt.Printf("[DEBUG] Error checking card in PocketBase: %v\n", err)
 			return
 		}
 
 		if card != nil && card.PlaylistID != "" {
 			if card.PlaylistID == payload.PlaylistID {
-				utils.WriteResponse(w, http.StatusConflict, "Card is already associated with this playlist")
+				WriteResponse(w, http.StatusConflict, "Card is already associated with this playlist")
 				fmt.Printf("[DEBUG] Card %s is already associated with playlist %s\n", uid, payload.PlaylistID)
 			} else {
-				utils.WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
+				WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
 				fmt.Printf("[DEBUG] Card %s is already associated with another playlist\n", uid)
 			}
 			// Switch back to ReadMode after handling
@@ -73,18 +74,18 @@ func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, ba
 		}
 		err = pocketbase.AddCard(baseURL, newCard)
 		if err != nil {
-			utils.WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error adding card: %v", err))
+			WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error adding card: %v", err))
 			fmt.Printf("[DEBUG] Error adding card to PocketBase: %v\n", err)
 			// Switch back to ReadMode after handling
 			switchToReadMode(modeSwitch)
 			return
 		}
 
-		utils.WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
+		WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
 		fmt.Printf("[DEBUG] Card %s associated with playlist %s successfully. HTTP response sent.\n", uid, payload.PlaylistID)
 
 	case <-time.After(10 * time.Second):
-		utils.WriteResponse(w, http.StatusRequestTimeout, "No card detected within 10 seconds")
+		WriteResponse(w, http.StatusRequestTimeout, "No card detected within 10 seconds")
 		fmt.Println("[DEBUG] No card detected within the timeout period")
 	}
 
