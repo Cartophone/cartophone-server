@@ -42,7 +42,7 @@ func startModeManager(modeSwitch <-chan string, cardDetectedChan <-chan string, 
                 modeLock.Lock()
                 if *currentMode == ReadMode {
                     fmt.Printf("[DEBUG] Detected card in Read Mode: %s\n", uid)
-                    handlers.HandleReadAction(uid, "http://127.0.0.1:8090")
+                    handlers.HandleReadAction(uid, config.PocketBaseURL)
                 } else {
                     fmt.Printf("[DEBUG] Ignoring card %s because we are in Associate Mode\n", uid)
                 }
@@ -85,9 +85,12 @@ func main() {
     // Start polling for NFC cards
     go reader.StartRead(cardDetectedChan)
 
+    // Start alarm checker
+    handlers.StartAlarmChecker(config.PocketBaseURL)
+
     // HTTP endpoint for associate mode
     http.HandleFunc("/associate", func(w http.ResponseWriter, r *http.Request) {
-        handlers.AssociateHandler(cardDetectedChan, modeSwitch, "http://127.0.0.1:8090", w, r)
+        handlers.AssociateHandler(cardDetectedChan, modeSwitch, config.PocketBaseURL, w, r)
     })
 
     // Start the HTTP server

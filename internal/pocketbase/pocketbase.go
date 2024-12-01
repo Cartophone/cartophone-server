@@ -23,6 +23,14 @@ type Playlist struct {
 	URI  string `json:"uri"` // URI to be played
 }
 
+// Alarm represents an alarm in the PocketBase "alarms" collection
+type Alarm struct {
+	ID         string `json:"id"`
+	Hour       string `json:"hour"`
+	Activated  bool   `json:"activated"`
+	PlaylistID string `json:"playlistId"`
+}
+
 // CheckCard checks if a card exists in the PocketBase database
 func CheckCard(baseURL, uid string) (*Card, error) {
 	filter := url.QueryEscape(fmt.Sprintf("uid='%s'", uid))
@@ -127,4 +135,28 @@ func GetPlaylist(baseURL, playlistID string) (*Playlist, error) {
 	}
 
 	return &playlist, nil
+}
+
+// FetchActiveAlarms fetches all active alarms from PocketBase
+func FetchActiveAlarms(baseURL string) ([]Alarm, error) {
+	url := fmt.Sprintf("%s/api/collections/alarms/records?filter=activated=true", baseURL)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch active alarms: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected response: %s", resp.Status)
+	}
+
+	var result struct {
+		Items []Alarm `json:"items"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to parse active alarms: %v", err)
+	}
+
+	return result.Items, nil
 }
