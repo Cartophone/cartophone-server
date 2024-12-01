@@ -18,7 +18,7 @@ func StartAlarmChecker(baseURL string) {
 			alarms, err := pocketbase.FetchActiveAlarms(baseURL)
 			if err != nil {
 				fmt.Printf("[ERROR] Failed to fetch alarms: %v\n", err)
-				time.Sleep(1 * time.Minute) // Wait before retrying
+				time.Sleep(1 * time.Minute) // Retry after 1 minute
 				continue
 			}
 
@@ -27,8 +27,8 @@ func StartAlarmChecker(baseURL string) {
 				if alarm.Hour == now {
 					fmt.Printf("[DEBUG] Alarm triggered! Hour: %s, Playlist ID: %s\n", alarm.Hour, alarm.PlaylistID)
 
-					// Fetch the playlist
-					playlist, err := pocketbase.FetchPlaylistByID(baseURL, alarm.PlaylistID)
+					// Fetch the playlist associated with the alarm
+					playlist, err := pocketbase.GetPlaylist(baseURL, alarm.PlaylistID)
 					if err != nil {
 						fmt.Printf("[ERROR] Failed to fetch playlist for alarm: %v\n", err)
 						continue
