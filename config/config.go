@@ -9,7 +9,7 @@ import (
 // Config structure holds the application configuration.
 type Config struct {
 	DevicePath string `json:"device_path"`
-	PocketBaseURL string `json:"pocketBaseURL"`
+	PocketBaseURL string `json:"pocket_base_url"`
 }
 
 // LoadConfig loads configuration from a JSON file.
