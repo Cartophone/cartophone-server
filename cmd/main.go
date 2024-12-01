@@ -6,7 +6,7 @@ import (
     "net/http"
     "sync"
 
-    "cartophone-server/internal/config"
+    "cartophone-server/config"
     "cartophone-server/internal/constants"
     "cartophone-server/internal/handlers"
     "cartophone-server/internal/nfc"
