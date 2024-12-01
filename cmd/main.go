@@ -10,7 +10,7 @@ import (
     "cartophone-server/internal/constants"
     "cartophone-server/internal/handlers"
     "cartophone-server/internal/nfc"
-    "cartophone-server/internal/utils"
+    "cartophone-server/internal/alarms"
 )
 
 func main() {

@@ -9,7 +9,6 @@ import (
 
 	"cartophone-server/internal/constants"
 	"cartophone-server/internal/pocketbase"
-	"cartophone-server/internal/utils"
 )
 
 func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
