@@ -1,11 +1,10 @@
-package utils
+package handlers
 
 import (
 	"fmt"
 	"sync"
 
 	"cartophone-server/internal/constants"
-	"cartophone-server/internal/handlers"
 )
 
 // StartModeManager manages the application's mode of operation.
@@ -39,7 +38,7 @@ func StartModeManager(
 				modeLock.Lock()
 				if *currentMode == constants.ReadMode {
 					fmt.Printf("[DEBUG] Detected card in Read Mode: %s\n", uid)
-					handlers.HandleReadAction(uid, pocketBaseURL)
+					HandleReadAction(uid, pocketBaseURL) // Direct call to HandleReadAction
 				} else {
 					fmt.Printf("[DEBUG] Ignoring card %s because we are in Associate Mode\n", uid)
 				}

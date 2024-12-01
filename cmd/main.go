@@ -40,7 +40,14 @@ func main() {
     var modeLock sync.Mutex
     currentMode := constants.ReadMode
 
-    utils.StartModeManager(modeSwitch, cardDetectedChan, &currentMode, &modeLock, config.PocketBaseURL)
+    // Use StartModeManager from handlers
+    handlers.StartModeManager(
+        modeSwitch,
+        cardDetectedChan,
+        &currentMode,
+        &modeLock,
+        config.PocketBaseURL,
+    )
 
     // Start polling for NFC cards
     go reader.StartRead(cardDetectedChan)
