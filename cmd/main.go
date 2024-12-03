@@ -59,6 +59,26 @@ func main() {
         handlers.AssociateHandler(cardDetectedChan, modeSwitch, config.PocketBaseURL, w, r)
     })
 
+    // Set up HTTP routes for alarm management
+    http.HandleFunc("/alarms/create", func(w http.ResponseWriter, r *http.Request) {
+        handlers.CreateAlarmHandler(config.PocketBaseURL, w, r)
+    })
+    http.HandleFunc("/alarms/delete", func(w http.ResponseWriter, r *http.Request) {
+        handlers.DeleteAlarmHandler(config.PocketBaseURL, w, r)
+    })
+    http.HandleFunc("/alarms/list", func(w http.ResponseWriter, r *http.Request) {
+        handlers.ListAlarmsHandler(config.PocketBaseURL, w, r)
+    })
+    http.HandleFunc("/alarms/set-status", func(w http.ResponseWriter, r *http.Request) {
+        handlers.SetAlarmStatusHandler(config.PocketBaseURL, w, r)
+    })
+    http.HandleFunc("/alarms/change-playlist", func(w http.ResponseWriter, r *http.Request) {
+        handlers.ChangeAlarmPlaylistHandler(config.PocketBaseURL, w, r)
+    })
+    http.HandleFunc("/alarms/change-hour", func(w http.ResponseWriter, r *http.Request) {
+        handlers.ChangeAlarmHourHandler(config.PocketBaseURL, w, r)
+    })
+
     // Start the HTTP server
     go func() {
         log.Fatal(http.ListenAndServe(":8080", nil))
