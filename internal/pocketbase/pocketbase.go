@@ -139,7 +139,10 @@ func GetPlaylist(baseURL, playlistID string) (*Playlist, error) {
 
 // FetchActiveAlarms fetches all active alarms for a specific time.
 func FetchActiveAlarms(baseURL, currentTime string) ([]Alarm, error) {
-	url := fmt.Sprintf("%s/api/collections/alarms/records?filter=hour='%s'&&activated=true", baseURL, currentTime)
+	url := fmt.Sprintf(
+		"%s/api/collections/alarms/records?filter=hour='%s' && activated=true",
+		baseURL, currentTime,
+	)
 
 	resp, err := http.Get(url)
 	if err != nil {
