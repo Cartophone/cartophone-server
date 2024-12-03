@@ -140,7 +140,7 @@ func GetPlaylist(baseURL, playlistID string) (*Playlist, error) {
 // FetchActiveAlarms fetches all active alarms for a specific time.
 func FetchActiveAlarms(baseURL, currentTime string) ([]Alarm, error) {
 	url := fmt.Sprintf(
-		"%s/api/collections/alarms/records?filter=(hour='%s' && activated=true)",
+		"%s/api/collections/alarms/records?filter=hour='%s'&&activated=true",
 		baseURL, currentTime,
 	)
 
@@ -152,8 +152,10 @@ func FetchActiveAlarms(baseURL, currentTime string) ([]Alarm, error) {
 	}
 	defer resp.Body.Close()
 
+	body, _ := ioutil.ReadAll(resp.Body) // Read the response body for debugging
+
 	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
+		fmt.Printf("[DEBUG] Response body: %s\n", string(body))
 		return nil, fmt.Errorf("unexpected response: %s", string(body))
 	}
 
