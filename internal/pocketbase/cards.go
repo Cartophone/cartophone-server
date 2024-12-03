@@ -15,60 +15,85 @@ type Card struct {
 	PlaylistID string `json:"playlistId"`
 }
 
-// CheckCard checks if a card exists in PocketBase by UID
+// CheckCard checks if a card exists in the PocketBase database
 func CheckCard(baseURL, uid string) (*Card, error) {
-	url := fmt.Sprintf("%s/api/collections/cards/records?filter=uid='%s'", baseURL, uid)
+	filter := url.QueryEscape(fmt.Sprintf("uid='%s'", uid))
+	url := fmt.Sprintf("%s/api/collections/cards/records?filter=%s", baseURL, filter)
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch card: %w", err)
+		return nil, fmt.Errorf("failed to connect to PocketBase: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		return nil, fmt.Errorf("unexpected response: %s", string(body))
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil
+	} else if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected response: %s", resp.Status)
 	}
 
-	var response struct {
+	var result struct {
 		Items []Card `json:"items"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("failed to decode card response: %w", err)
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
-	if len(response.Items) == 0 {
-		return nil, nil // Card does not exist
+	if len(result.Items) == 0 {
+		return nil, nil
 	}
 
-	return &response.Items[0], nil // Return the first matching card
+	return &result.Items[0], nil
 }
 
-// AddCard adds a new card to PocketBase
-func AddCard(baseURL, uid, playlistID string) (*Card, error) {
+// AddCard adds a new card to the PocketBase database
+func AddCard(baseURL string, card Card) error {
 	url := fmt.Sprintf("%s/api/collections/cards/records", baseURL)
 
-	payload := map[string]interface{}{
-		"uid":        uid,
-		"playlistId": playlistID,
-	}
-	data, _ := json.Marshal(payload)
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
+	payload, err := json.Marshal(card)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add card: %w", err)
+		return fmt.Errorf("failed to marshal card: %w", err)
+	}
+
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("failed to add card: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return nil, fmt.Errorf("unexpected response: %s", string(body))
+		return fmt.Errorf("unexpected response: %s", string(body))
 	}
 
-	var card Card
-	if err := json.NewDecoder(resp.Body).Decode(&card); err != nil {
-		return nil, fmt.Errorf("failed to decode card response: %w", err)
+	return nil
+}
+
+// UpdateCard updates an existing card in PocketBase
+func UpdateCard(baseURL string, card Card) error {
+	url := fmt.Sprintf("%s/api/collections/cards/records/%s", baseURL, card.ID)
+
+	payload, err := json.Marshal(card)
+	if err != nil {
+		return fmt.Errorf("failed to marshal card: %w", err)
 	}
 
-	return &card, nil
+	req, err := http.NewRequest(http.MethodPatch, url, bytes.NewBuffer(payload))
+	if err != nil {
+		return fmt.Errorf("failed to create update request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update card: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected response: %s", resp.Status)
+	}
+
+	return nil
 }
