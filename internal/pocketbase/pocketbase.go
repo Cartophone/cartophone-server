@@ -152,17 +152,22 @@ func FetchActiveAlarms(baseURL, currentTime string) ([]Alarm, error) {
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body) // Read the response body for debugging
+	body, _ := ioutil.ReadAll(resp.Body) // Read the response body
+	fmt.Printf("[DEBUG] Response body: %s\n", string(body))
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("[DEBUG] Response body: %s\n", string(body))
 		return nil, fmt.Errorf("unexpected response: %s", string(body))
+	}
+
+	// Check for an empty response body
+	if len(body) == 0 {
+		return nil, fmt.Errorf("received empty response from PocketBase")
 	}
 
 	var response struct {
 		Items []Alarm `json:"items"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+	if err := json.Unmarshal(body, &response); err != nil {
 		return nil, fmt.Errorf("failed to decode alarms response: %w", err)
 	}
 
