@@ -137,31 +137,25 @@ func GetPlaylist(baseURL, playlistID string) (*Playlist, error) {
 	return &playlist, nil
 }
 
-// FetchActiveAlarms fetches all active alarms for a specific time.
+// FetchActiveAlarms fetches alarms based on the current time and activation status
 func FetchActiveAlarms(baseURL, currentTime string) ([]Alarm, error) {
-	url := fmt.Sprintf(
-		"%s/api/collections/alarms/records?filter=hour='%s'&&activated=true",
-		baseURL, currentTime,
-	)
+	// Properly encode the filter query
+	filter := url.QueryEscape(fmt.Sprintf("hour='%s' && activated=true", currentTime))
+	queryURL := fmt.Sprintf("%s/api/collections/alarms/records?filter=%s", baseURL, filter)
 
-	fmt.Printf("[DEBUG] Fetching alarms with URL: %s\n", url)
+	fmt.Printf("[DEBUG] Fetching alarms with URL: %s\n", queryURL)
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(queryURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch alarms: %w", err)
 	}
 	defer resp.Body.Close()
 
-	body, _ := ioutil.ReadAll(resp.Body) // Read the response body
+	body, _ := ioutil.ReadAll(resp.Body) // Read the response body for debugging
 	fmt.Printf("[DEBUG] Response body: %s\n", string(body))
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected response: %s", string(body))
-	}
-
-	// Check for an empty response body
-	if len(body) == 0 {
-		return nil, fmt.Errorf("received empty response from PocketBase")
 	}
 
 	var response struct {
