@@ -16,6 +16,37 @@ type Alarm struct {
 	PlaylistID string `json:"playlistId"`
 }
 
+// FetchActiveAlarms fetches alarms based on the current time and activation status
+func FetchActiveAlarms(baseURL, currentTime string) ([]Alarm, error) {
+	// Properly encode the filter query
+	filter := url.QueryEscape(fmt.Sprintf("hour='%s' && activated=true", currentTime))
+	queryURL := fmt.Sprintf("%s/api/collections/alarms/records?filter=%s", baseURL, filter)
+
+	fmt.Printf("[DEBUG] Fetching alarms with URL: %s\n", queryURL)
+
+	resp, err := http.Get(queryURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch alarms: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body) // Read the response body for debugging
+	fmt.Printf("[DEBUG] Response body: %s\n", string(body))
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected response: %s", string(body))
+	}
+
+	var response struct {
+		Items []Alarm `json:"items"`
+	}
+	if err := json.Unmarshal(body, &response); err != nil {
+		return nil, fmt.Errorf("failed to decode alarms response: %w", err)
+	}
+
+	return response.Items, nil
+}
+
 // CreateAlarm creates a new alarm in PocketBase
 func CreateAlarm(baseURL, playlistID, hour string, activated bool) (*Alarm, error) {
 	url := fmt.Sprintf("%s/api/collections/alarms/records", baseURL)
