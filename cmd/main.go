@@ -19,6 +19,9 @@ func main() {
     fmt.Println("Welcome to Cartophone! Ready to scan NFC cards and interact with Owntone and Pocketbase.")
     fmt.Println("Press Ctrl+C to stop the server.")
 
+    log.Printf("[DEBUG] Loaded PocketBase URL: %s\n", appConfig.PocketBaseURL)
+    log.Printf("[DEBUG] Loaded PocketBase URL: %s\n", appConfig.OwnToneBaseURL)
+
     // Load the configuration
     config, err := config.LoadConfig("config.json")
     if err != nil {
