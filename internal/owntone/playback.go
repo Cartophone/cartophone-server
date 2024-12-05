@@ -1,7 +1,6 @@
 package owntone
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 )
