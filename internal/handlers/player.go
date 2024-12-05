@@ -77,7 +77,7 @@ func ListQueueHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	queue, err := owntone.GetQueue(baseURL)
+	queue, err := owntone.FetchQueue(baseURL)
 	if err != nil {
 		utils.LogMessage("ERROR", "Failed to fetch Owntone queue", map[string]string{"error": err.Error()})
 		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch queue"})
