@@ -20,7 +20,8 @@ func Play(baseURL string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	// Treat 204 No Content as a successful response
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("unexpected response: %s", resp.Status)
 	}
 
@@ -42,7 +43,8 @@ func Pause(baseURL string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	// Treat 204 No Content as a successful response
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		return fmt.Errorf("unexpected response: %s", resp.Status)
 	}
 
