@@ -24,7 +24,7 @@ func main() {
     if err != nil {
         log.Fatalf("Failed to load configuration: %v", err)
     }
-    
+
     // Initialize the NFC reader
     reader, err := nfc.NewReader(config.DevicePath)
     if err != nil {
@@ -58,6 +58,14 @@ func main() {
     // Set up HTTP routes for player management
     http.HandleFunc("/player/status", func(w http.ResponseWriter, r *http.Request) {
         handlers.PlayerStatusHandler(config.OwnToneBaseURL, w, r)
+    })
+
+    http.HandleFunc("/player/play", func(w http.ResponseWriter, r *http.Request) {
+        handlers.PlayHandler(config.OwnToneBaseURL, w, r)
+    })
+
+    http.HandleFunc("/player/pause", func(w http.ResponseWriter, r *http.Request) {
+        handlers.PauseHandler(config.OwnToneBaseURL, w, r)
     })
 
     // Set up HTTP routes for cards management
