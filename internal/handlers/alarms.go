@@ -3,16 +3,16 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"cartophone-server/internal/pocketbase"
+	"cartophone-server/internal/utils"
 )
 
 // CreateAlarmHandler handles the creation of a new alarm
 func CreateAlarmHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return
 	}
 
@@ -23,24 +23,23 @@ func CreateAlarmHandler(baseURL string, w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 		return
 	}
 
 	alarm, err := pocketbase.CreateAlarm(baseURL, payload.PlaylistID, payload.Hour, payload.Activated)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to create alarm: %v", err), http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Failed to create alarm: %v", err)})
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(alarm)
+	utils.WriteJSONResponse(w, http.StatusCreated, alarm)
 }
 
 // DeleteAlarmHandler handles the deletion of an alarm by ID
 func DeleteAlarmHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return
 	}
 
@@ -49,35 +48,34 @@ func DeleteAlarmHandler(baseURL string, w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 		return
 	}
 
 	err := pocketbase.DeleteAlarm(baseURL, payload.ID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to delete alarm: %v", err), http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Failed to delete alarm: %v", err)})
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, "Alarm deleted successfully")
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Alarm deleted successfully"})
 }
 
 // ListAlarmsHandler handles listing all alarms
 func ListAlarmsHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	alarms, err := pocketbase.ListAlarms(baseURL)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to list alarms: %v", err), http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Failed to list alarms: %v", err)})
 		return
 	}
 
-	json.NewEncoder(w).Encode(alarms)
+	utils.WriteJSONResponse(w, http.StatusOK, alarms)
 }
 
 // SetAlarmStatusHandler handles updating the activation status of an alarm
 func SetAlarmStatusHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return
 	}
 
@@ -87,23 +85,23 @@ func SetAlarmStatusHandler(baseURL string, w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 		return
 	}
 
 	err := pocketbase.SetAlarmStatus(baseURL, payload.ID, payload.Activated)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to update alarm status: %v", err), http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Failed to update alarm status: %v", err)})
 		return
 	}
 
-	io.WriteString(w, "Alarm status updated successfully")
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Alarm status updated successfully"})
 }
 
 // ChangeAlarmPlaylistHandler handles changing the playlist of an alarm
 func ChangeAlarmPlaylistHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return
 	}
 
@@ -113,23 +111,23 @@ func ChangeAlarmPlaylistHandler(baseURL string, w http.ResponseWriter, r *http.R
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 		return
 	}
 
 	err := pocketbase.ChangeAlarmPlaylist(baseURL, payload.ID, payload.PlaylistID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to change alarm playlist: %v", err), http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Failed to change alarm playlist: %v", err)})
 		return
 	}
 
-	io.WriteString(w, "Alarm playlist updated successfully")
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Alarm playlist updated successfully"})
 }
 
 // ChangeAlarmHourHandler handles changing the hour of an alarm
 func ChangeAlarmHourHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return
 	}
 
@@ -139,15 +137,15 @@ func ChangeAlarmHourHandler(baseURL string, w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 		return
 	}
 
 	err := pocketbase.ChangeAlarmHour(baseURL, payload.ID, payload.Hour)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to change alarm hour: %v", err), http.StatusInternalServerError)
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Failed to change alarm hour: %v", err)})
 		return
 	}
 
-	io.WriteString(w, "Alarm hour updated successfully")
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Alarm hour updated successfully"})
 }
