@@ -9,7 +9,7 @@ import (
 	"cartophone-server/internal/pocketbase"
 )
 
-// CreateAlarmHandler creates a new alarm
+// CreateAlarmHandler handles the creation of a new alarm
 func CreateAlarmHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -37,20 +37,23 @@ func CreateAlarmHandler(baseURL string, w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(alarm)
 }
 
-// DeleteAlarmHandler deletes an alarm by ID
+// DeleteAlarmHandler handles the deletion of an alarm by ID
 func DeleteAlarmHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
 
-	id := r.URL.Query().Get("id")
-	if id == "" {
-		http.Error(w, "Missing alarm ID", http.StatusBadRequest)
+	var payload struct {
+		ID string `json:"id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	err := pocketbase.DeleteAlarm(baseURL, id)
+	err := pocketbase.DeleteAlarm(baseURL, payload.ID)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to delete alarm: %v", err), http.StatusInternalServerError)
 		return
@@ -60,7 +63,7 @@ func DeleteAlarmHandler(baseURL string, w http.ResponseWriter, r *http.Request) 
 	io.WriteString(w, "Alarm deleted successfully")
 }
 
-// ListAlarmsHandler lists all alarms
+// ListAlarmsHandler handles listing all alarms
 func ListAlarmsHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	alarms, err := pocketbase.ListAlarms(baseURL)
 	if err != nil {
@@ -71,7 +74,7 @@ func ListAlarmsHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(alarms)
 }
 
-// SetAlarmStatusHandler updates the status of an alarm
+// SetAlarmStatusHandler handles updating the activation status of an alarm
 func SetAlarmStatusHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -97,7 +100,7 @@ func SetAlarmStatusHandler(baseURL string, w http.ResponseWriter, r *http.Reques
 	io.WriteString(w, "Alarm status updated successfully")
 }
 
-// ChangeAlarmPlaylistHandler changes the playlist of an alarm
+// ChangeAlarmPlaylistHandler handles changing the playlist of an alarm
 func ChangeAlarmPlaylistHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -123,7 +126,7 @@ func ChangeAlarmPlaylistHandler(baseURL string, w http.ResponseWriter, r *http.R
 	io.WriteString(w, "Alarm playlist updated successfully")
 }
 
-// ChangeAlarmHourHandler changes the hour of an alarm
+// ChangeAlarmHourHandler handles changing the hour of an alarm
 func ChangeAlarmHourHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
