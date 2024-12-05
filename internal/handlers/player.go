@@ -26,11 +26,10 @@ func PlayerStatusHandler(ownToneBaseURL string, w http.ResponseWriter, r *http.R
 	utils.WriteJSONResponse(w, http.StatusOK, status)
 }
 
-
 // PlayHandler triggers the play action on the Owntone player
 func PlayHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		utils.LogMessage("ERROR", "Invalid request method for PlayHandler", nil)
+		utils.LogMessage("ERROR", "Invalid request method for PlayHandler", map[string]string{"method": r.Method})
 		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return
 	}
@@ -39,8 +38,8 @@ func PlayHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 
 	err := owntone.Play(baseURL)
 	if err != nil {
-		utils.LogMessage("ERROR", fmt.Sprintf("Failed to play: %v", err), nil)
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Failed to play: %v", err)})
+		utils.LogMessage("ERROR", "Failed to play Owntone", map[string]string{"error": err.Error()})
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
@@ -51,7 +50,7 @@ func PlayHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 // PauseHandler triggers the pause action on the Owntone player
 func PauseHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		utils.LogMessage("ERROR", "Invalid request method for PauseHandler", nil)
+		utils.LogMessage("ERROR", "Invalid request method for PauseHandler", map[string]string{"method": r.Method})
 		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return
 	}
@@ -60,8 +59,8 @@ func PauseHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 
 	err := owntone.Pause(baseURL)
 	if err != nil {
-		utils.LogMessage("ERROR", fmt.Sprintf("Failed to pause: %v", err), nil)
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Failed to pause: %v", err)})
+		utils.LogMessage("ERROR", "Failed to pause Owntone", map[string]string{"error": err.Error()})
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
