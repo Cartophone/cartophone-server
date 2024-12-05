@@ -1,4 +1,3 @@
-
 package handlers
 
 import (
@@ -9,6 +8,7 @@ import (
 
 	"cartophone-server/internal/constants"
 	"cartophone-server/internal/pocketbase"
+	"cartophone-server/internal/utils"
 )
 
 func AssociateCardHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
@@ -20,13 +20,13 @@ func AssociateCardHandler(cardDetectedChan <-chan string, modeSwitch chan string
 		ReplaceCard bool   `json:"replaceCard,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		WriteResponse(w, http.StatusBadRequest, "Invalid request payload")
+		utils.WriteJSONResponse(w, http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 		fmt.Println("[DEBUG] Invalid request payload. Exiting handler.")
 		return
 	}
 
 	if payload.PlaylistID == "" {
-		WriteResponse(w, http.StatusBadRequest, "Playlist ID is required")
+		utils.WriteJSONResponse(w, http.StatusBadRequest, map[string]string{"error": "Playlist ID is required"})
 		fmt.Println("[DEBUG] Playlist ID is missing in the request payload. Exiting handler.")
 		return
 	}
@@ -49,41 +49,39 @@ func AssociateCardHandler(cardDetectedChan <-chan string, modeSwitch chan string
 		// Check if the card exists in PocketBase
 		card, err := pocketbase.CheckCard(baseURL, uid)
 		if err != nil {
-			WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error checking card: %v", err))
+			utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Error checking card: %v", err)})
 			fmt.Printf("[DEBUG] Error checking card in PocketBase: %v\n", err)
 			return
 		}
 
 		if card != nil && card.PlaylistID != "" {
 			if card.PlaylistID == payload.PlaylistID {
-				WriteResponse(w, http.StatusConflict, "Card is already associated with this playlist")
+				utils.WriteJSONResponse(w, http.StatusConflict, map[string]string{"message": "Card is already associated with this playlist"})
 				fmt.Printf("[DEBUG] Card %s is already associated with playlist %s\n", uid, payload.PlaylistID)
 			} else if payload.ReplaceCard {
-				// Replace the playlist associated with the card
 				card.PlaylistID = payload.PlaylistID
 				err = pocketbase.UpdateCard(baseURL, *card)
 				if err != nil {
-					WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error updating card: %v", err))
+					utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Error updating card: %v", err)})
 					fmt.Printf("[DEBUG] Error updating card in PocketBase: %v\n", err)
 					// Switch back to ReadMode after handling
 					switchToReadMode(modeSwitch)
 					return
 				}
 
-				WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s reassigned to playlist %s successfully!", uid, payload.PlaylistID))
+				utils.WriteJSONResponse(w, http.StatusOK, map[string]string{
+					"message":    fmt.Sprintf("Card %s reassigned to playlist %s successfully!", uid, payload.PlaylistID),
+					"cardId":     card.ID,
+					"playlistId": card.PlaylistID,
+				})
 				fmt.Printf("[DEBUG] Card %s reassigned to playlist %s successfully. HTTP response sent.\n", uid, payload.PlaylistID)
 			} else {
-				response := map[string]string{
+				utils.WriteJSONResponse(w, http.StatusConflict, map[string]string{
 					"message":    "Card is already associated with another playlist",
 					"cardId":     card.ID,
 					"playlistId": card.PlaylistID,
-				}
-				w.WriteHeader(http.StatusConflict)
-				if err := json.NewEncoder(w).Encode(response); err != nil {
-					fmt.Printf("[DEBUG] Failed to send JSON response: %v\n", err)
-				} else {
-					fmt.Printf("[DEBUG] Card %s is already associated with another playlist (ID: %s). Response sent.\n", uid, card.PlaylistID)
-				}
+				})
+				fmt.Printf("[DEBUG] Card %s is already associated with another playlist (ID: %s). Response sent.\n", uid, card.PlaylistID)
 			}
 			// Switch back to ReadMode after handling
 			switchToReadMode(modeSwitch)
@@ -97,18 +95,21 @@ func AssociateCardHandler(cardDetectedChan <-chan string, modeSwitch chan string
 		}
 		err = pocketbase.AddCard(baseURL, newCard)
 		if err != nil {
-			WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error adding card: %v", err))
+			utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("Error adding card: %v", err)})
 			fmt.Printf("[DEBUG] Error adding card to PocketBase: %v\n", err)
-			// Switch back to ReadMode after handling
 			switchToReadMode(modeSwitch)
 			return
 		}
 
-		WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID))
+		utils.WriteJSONResponse(w, http.StatusOK, map[string]string{
+			"message":    fmt.Sprintf("Card %s associated with playlist %s successfully!", uid, payload.PlaylistID),
+			"cardId":     newCard.ID,
+			"playlistId": newCard.PlaylistID,
+		})
 		fmt.Printf("[DEBUG] Card %s associated with playlist %s successfully. HTTP response sent.\n", uid, payload.PlaylistID)
 
 	case <-time.After(10 * time.Second):
-		WriteResponse(w, http.StatusRequestTimeout, "No card detected within 10 seconds")
+		utils.WriteJSONResponse(w, http.StatusRequestTimeout, map[string]string{"error": "No card detected within 10 seconds"})
 		fmt.Println("[DEBUG] No card detected within the timeout period")
 	}
 
