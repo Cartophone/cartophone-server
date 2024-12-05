@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"fmt"
 	"sync"
 
 	"cartophone-server/internal/constants"
+	"cartophone-server/internal/utils"
 )
 
 // StartModeManager manages the application's mode of operation.
@@ -19,28 +19,31 @@ func StartModeManager(
 		for {
 			select {
 			case mode := <-modeSwitch:
-				fmt.Printf("[DEBUG] modeSwitch signal received: %s\n", mode)
+				utils.LogMessage("INFO", "Mode switch signal received", map[string]interface{}{"mode": mode})
 
 				modeLock.Lock()
 				if *currentMode != mode {
 					*currentMode = mode
 					if mode == constants.ReadMode {
-						fmt.Println("[DEBUG] Switched to Read Mode")
+						utils.LogMessage("INFO", "Switched to Read Mode", nil)
 					} else if mode == constants.AssociateMode {
-						fmt.Println("[DEBUG] Switched to Associate Mode")
+						utils.LogMessage("INFO", "Switched to Associate Mode", nil)
 					}
 				} else {
-					fmt.Printf("[DEBUG] Ignoring duplicate signal for mode: %s\n", mode)
+					utils.LogMessage("INFO", "Duplicate mode switch signal ignored", map[string]interface{}{"mode": mode})
 				}
 				modeLock.Unlock()
 
 			case uid := <-cardDetectedChan:
 				modeLock.Lock()
 				if *currentMode == constants.ReadMode {
-					fmt.Printf("[DEBUG] Detected card in Read Mode: %s\n", uid)
+					utils.LogMessage("INFO", "Card detected in Read Mode", map[string]interface{}{"uid": uid})
 					HandleReadAction(uid, pocketBaseURL) // Direct call to HandleReadAction
 				} else {
-					fmt.Printf("[DEBUG] Ignoring card %s because we are in Associate Mode\n", uid)
+					utils.LogMessage("INFO", "Card ignored because of current mode", map[string]interface{}{
+						"uid":  uid,
+						"mode": *currentMode,
+					})
 				}
 				modeLock.Unlock()
 			}

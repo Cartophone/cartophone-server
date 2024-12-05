@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"fmt"
-
 	"cartophone-server/internal/pocketbase"
 	"cartophone-server/internal/utils"
 )
