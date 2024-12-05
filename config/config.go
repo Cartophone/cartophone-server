@@ -10,7 +10,7 @@ import (
 
 // Config represents the application's configuration
 type Config struct {
-	DevicePath     string `json:"devicePath"`
+	DevicePath     string `json:"device_path"`
 	PocketBaseURL  string `json:"pocket_base_url"`
 	OwnToneBaseURL string `json:"owntone_base_url"` // Added OwnTone base URL
 }
