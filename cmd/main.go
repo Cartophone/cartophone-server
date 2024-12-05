@@ -57,7 +57,7 @@ func main() {
 
     // Set up HTTP routes for cards management
     http.HandleFunc("/cards/associate", func(w http.ResponseWriter, r *http.Request) {
-    handlers.AssociateCardHandler(config.PocketBaseURL, modeSwitch, w, r)
+        handlers.AssociateCardHandler(cardDetectedChan, modeSwitch, config.PocketBaseURL, w, r)
     })
 
     // Set up HTTP routes for alarm management
