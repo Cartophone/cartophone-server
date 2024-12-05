@@ -26,7 +26,7 @@ func main() {
     }
 
     log.Printf("[DEBUG] Loaded PocketBase URL: %s\n", config.PocketBaseURL)
-    log.Printf("[DEBUG] Loaded PocketBase URL: %s\n", config.OwnToneBaseURL)
+    log.Printf("[DEBUG] Loaded OwnTone URL: %s\n", config.OwnToneBaseURL)
 
     // Initialize the NFC reader
     reader, err := nfc.NewReader(config.DevicePath)
