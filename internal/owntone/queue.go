@@ -71,12 +71,14 @@ func ClearQueue(baseURL string) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
+	// Treat 204 as a successful response
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
 		body, _ := ioutil.ReadAll(resp.Body)
 		utils.LogMessage("ERROR", "Unexpected response status", map[string]string{"status": resp.Status, "body": string(body)})
 		return fmt.Errorf("unexpected response: %s", resp.Status)
 	}
 
+	utils.LogMessage("INFO", "Owntone queue cleared successfully", nil)
 	return nil
 }
 
