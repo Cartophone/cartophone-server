@@ -19,14 +19,14 @@ func main() {
     fmt.Println("Welcome to Cartophone! Ready to scan NFC cards and interact with Owntone and Pocketbase.")
     fmt.Println("Press Ctrl+C to stop the server.")
 
-    log.Printf("[DEBUG] Loaded PocketBase URL: %s\n", config.PocketBaseURL)
-    log.Printf("[DEBUG] Loaded PocketBase URL: %s\n", config.OwnToneBaseURL)
-
     // Load the configuration
     config, err := config.LoadConfig("config.json")
     if err != nil {
         log.Fatalf("Failed to load configuration: %v", err)
     }
+
+    log.Printf("[DEBUG] Loaded PocketBase URL: %s\n", config.PocketBaseURL)
+    log.Printf("[DEBUG] Loaded PocketBase URL: %s\n", config.OwnToneBaseURL)
 
     // Initialize the NFC reader
     reader, err := nfc.NewReader(config.DevicePath)
