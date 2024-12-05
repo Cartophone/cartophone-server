@@ -24,7 +24,7 @@ func FetchActiveAlarms(baseURL, currentTime string) ([]Alarm, error) {
 	filter := url.QueryEscape(fmt.Sprintf("hour='%s' && activated=true", currentTime))
 	queryURL := fmt.Sprintf("%s/api/collections/alarms/records?filter=%s", baseURL, filter)
 
-	utils.LogMessage("INFO", "Fetching active alarms", nil)
+	utils.LogMessage("INFO", fmt.Sprintf("Fetching active alarms for hour: %s", currentTime), nil)
 
 	resp, err := http.Get(queryURL)
 	if err != nil {
