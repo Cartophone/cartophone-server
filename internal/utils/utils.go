@@ -6,11 +6,24 @@ import (
 	"net/http"
 )
 
-// WriteJSONResponse sends a JSON response with the provided status code and data.
-func WriteJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
+// WriteJSONResponse sends a JSON response to the client and logs the response.
+func WriteJSONResponse(w http.ResponseWriter, statusCode int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		fmt.Printf("[DEBUG] Failed to write JSON response: %v\n", err)
+
+	response, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, fmt.Sprintf(`{"error": "Failed to encode response: %v"}`, err), http.StatusInternalServerError)
+		fmt.Printf("[ERROR] Failed to encode response: %v\n", err)
+		return
 	}
+
+	_, writeErr := w.Write(response)
+	if writeErr != nil {
+		fmt.Printf("[ERROR] Failed to write response to client: %v\n", writeErr)
+		return
+	}
+
+	// Log the response payload and status code
+	fmt.Printf("[RESPONSE] Status: %d, Payload: %s\n", statusCode, response)
 }
