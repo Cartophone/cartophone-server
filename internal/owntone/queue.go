@@ -10,23 +10,26 @@ import (
 	"cartophone-server/internal/utils"
 )
 
-// QueueItem represents an item in the Owntone queue
+// QueueItem represents a track in the Owntone queue
 type QueueItem struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Artist   string `json:"artist"`
-	Album    string `json:"album"`
-	Duration int    `json:"duration"`
+	ID           int    `json:"id"`
+	Position     int    `json:"position"`
+	Title        string `json:"title"`
+	Artist       string `json:"artist"`
+	Album        string `json:"album"`
+	URI          string `json:"uri"`
+	ArtworkURL   string `json:"artwork_url"`
+	LengthMillis int    `json:"length_ms"`
 }
 
-// GetQueue retrieves the current Owntone queue
-func GetQueue(baseURL string) ([]QueueItem, error) {
-	url := fmt.Sprintf("%s/api/player/queue", baseURL)
-
+// FetchQueue fetches the current queue from Owntone
+func FetchQueue(baseURL string) ([]QueueItem, error) {
+	url := fmt.Sprintf("%s/api/queue", baseURL)
 	utils.LogMessage("INFO", "Fetching Owntone queue", map[string]string{"url": url})
 
 	resp, err := http.Get(url)
 	if err != nil {
+		utils.LogMessage("ERROR", "Failed to fetch queue", map[string]string{"error": err.Error()})
 		return nil, fmt.Errorf("failed to fetch queue: %w", err)
 	}
 	defer resp.Body.Close()
@@ -35,63 +38,62 @@ func GetQueue(baseURL string) ([]QueueItem, error) {
 	utils.LogMessage("DEBUG", "Response body received", map[string]string{"body": string(body)})
 
 	if resp.StatusCode != http.StatusOK {
+		utils.LogMessage("ERROR", "Unexpected response status", map[string]string{"status": resp.Status})
 		return nil, fmt.Errorf("unexpected response: %s", resp.Status)
 	}
 
-	var queue []QueueItem
-	if err := json.Unmarshal(body, &queue); err != nil {
+	var response struct {
+		Items []QueueItem `json:"items"`
+	}
+	if err := json.Unmarshal(body, &response); err != nil {
+		utils.LogMessage("ERROR", "Failed to decode queue response", map[string]string{"error": err.Error()})
 		return nil, fmt.Errorf("failed to decode queue response: %w", err)
 	}
 
-	return queue, nil
+	return response.Items, nil
 }
 
-// ClearQueue clears the Owntone queue
+// ClearQueue clears the current Owntone queue
 func ClearQueue(baseURL string) error {
-	url := fmt.Sprintf("%s/api/player/queue/clear", baseURL)
-
+	url := fmt.Sprintf("%s/api/queue/clear", baseURL)
 	utils.LogMessage("INFO", "Clearing Owntone queue", map[string]string{"url": url})
 
-	req, err := http.NewRequest(http.MethodPut, url, nil)
+	resp, err := http.Post(url, "application/json", nil)
 	if err != nil {
-		return fmt.Errorf("failed to create clear queue request: %w", err)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
+		utils.LogMessage("ERROR", "Failed to clear queue", map[string]string{"error": err.Error()})
 		return fmt.Errorf("failed to clear queue: %w", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNoContent {
+	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("unexpected response: %s", string(body))
+		utils.LogMessage("ERROR", "Unexpected response status", map[string]string{"status": resp.Status, "body": string(body)})
+		return fmt.Errorf("unexpected response: %s", resp.Status)
 	}
 
-	utils.LogMessage("INFO", "Owntone queue cleared successfully", nil)
 	return nil
 }
 
 // AddToQueue adds a track to the Owntone queue
-func AddToQueue(baseURL string, trackURI string) error {
-	url := fmt.Sprintf("%s/api/player/queue/add", baseURL)
-
-	payload := map[string]string{"uri": trackURI}
+func AddToQueue(baseURL, uri string) error {
+	url := fmt.Sprintf("%s/api/queue/items/add", baseURL)
+	payload := map[string]string{"uri": uri}
 	data, _ := json.Marshal(payload)
 
-	utils.LogMessage("INFO", "Adding track to Owntone queue", map[string]string{"url": url, "uri": trackURI})
+	utils.LogMessage("INFO", "Adding track to Owntone queue", map[string]string{"url": url, "uri": uri})
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(data))
 	if err != nil {
+		utils.LogMessage("ERROR", "Failed to add track to queue", map[string]string{"error": err.Error()})
 		return fmt.Errorf("failed to add track to queue: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("unexpected response: %s", string(body))
+		utils.LogMessage("ERROR", "Unexpected response status", map[string]string{"status": resp.Status, "body": string(body)})
+		return fmt.Errorf("unexpected response: %s", resp.Status)
 	}
 
-	utils.LogMessage("INFO", "Track added to Owntone queue successfully", map[string]string{"uri": trackURI})
 	return nil
 }

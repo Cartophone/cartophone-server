@@ -68,13 +68,15 @@ func main() {
 
     // Queue Management Endpoints
     http.HandleFunc("/player/queue/list", func(w http.ResponseWriter, r *http.Request) {
-        handlers.QueueListHandler(config.OwnToneBaseURL, w, r)
+        handlers.ListQueueHandler(config.OwnToneBaseURL, w, r)
     })
+
     http.HandleFunc("/player/queue/clear", func(w http.ResponseWriter, r *http.Request) {
-        handlers.QueueClearHandler(config.OwnToneBaseURL, w, r)
+        handlers.ClearQueueHandler(config.OwnToneBaseURL, w, r)
     })
+
     http.HandleFunc("/player/queue/add", func(w http.ResponseWriter, r *http.Request) {
-        handlers.QueueAddHandler(config.OwnToneBaseURL, w, r)
+        handlers.AddToQueueHandler(config.OwnToneBaseURL, w, r)
     })
 
     // Set up HTTP routes for cards management
