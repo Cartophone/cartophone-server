@@ -24,7 +24,7 @@ func FetchActiveAlarms(baseURL, currentTime string) ([]Alarm, error) {
 	filter := url.QueryEscape(fmt.Sprintf("hour='%s' && activated=true", currentTime))
 	queryURL := fmt.Sprintf("%s/api/collections/alarms/records?filter=%s", baseURL, filter)
 
-	utils.LogMessage("INFO", "Fetching active alarms", map[string]interface{}{"url": queryURL})
+	utils.LogMessage("INFO", "Fetching active alarms", nil)
 
 	resp, err := http.Get(queryURL)
 	if err != nil {
@@ -34,7 +34,7 @@ func FetchActiveAlarms(baseURL, currentTime string) ([]Alarm, error) {
 	defer resp.Body.Close()
 
 	body, _ := ioutil.ReadAll(resp.Body)
-	utils.LogMessage("DEBUG", "Response body received", map[string]interface{}{"body": string(body)})
+	utils.LogMessage("DEBUG", "Response body received", nil)
 
 	if resp.StatusCode != http.StatusOK {
 		utils.LogMessage("ERROR", "Unexpected response while fetching alarms", map[string]interface{}{"status": resp.StatusCode, "body": string(body)})
