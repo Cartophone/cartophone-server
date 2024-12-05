@@ -1,30 +1,29 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
-	"encoding/json"
 )
 
-// Config structure holds the application configuration.
+// Config represents the application's configuration
 type Config struct {
-	DevicePath string `json:"device_path"`
-	PocketBaseURL string `json:"pocket_base_url"`
+	DevicePath     string `json:"devicePath"`
+	PocketBaseURL  string `json:"pocketbase_url"`
+	OwnToneBaseURL string `json:"owntone_base_url"` // Added OwnTone base URL
 }
 
-// LoadConfig loads configuration from a JSON file.
+// LoadConfig loads configuration from a JSON file
 func LoadConfig(filePath string) (*Config, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open config file: %v", err)
+		return nil, fmt.Errorf("failed to open config file: %w", err)
 	}
 	defer file.Close()
 
 	var config Config
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse config file: %v", err)
+	if err := json.NewDecoder(file).Decode(&config); err != nil {
+		return nil, fmt.Errorf("failed to decode config file: %w", err)
 	}
 
 	return &config, nil
