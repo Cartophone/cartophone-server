@@ -90,7 +90,7 @@ func ListQueueHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 
 // ClearQueueHandler clears the Owntone player queue
 func ClearQueueHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodPut {
 		utils.LogMessage("ERROR", "Invalid request method for ClearQueueHandler", nil)
 		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return

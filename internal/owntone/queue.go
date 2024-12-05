@@ -58,7 +58,13 @@ func ClearQueue(baseURL string) error {
 	url := fmt.Sprintf("%s/api/queue/clear", baseURL)
 	utils.LogMessage("INFO", "Clearing Owntone queue", map[string]string{"url": url})
 
-	resp, err := http.Post(url, "application/json", nil)
+	req, err := http.NewRequest(http.MethodPut, url, nil)
+	if err != nil {
+		utils.LogMessage("ERROR", "Failed to create PUT request to clear queue", map[string]string{"error": err.Error()})
+		return fmt.Errorf("failed to create PUT request to clear queue: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		utils.LogMessage("ERROR", "Failed to clear queue", map[string]string{"error": err.Error()})
 		return fmt.Errorf("failed to clear queue: %w", err)
