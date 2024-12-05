@@ -55,8 +55,9 @@ func main() {
     // Start the alarm checker from utils
     alarms.StartAlarmChecker(config.PocketBaseURL)
 
-    http.HandleFunc("/associate", func(w http.ResponseWriter, r *http.Request) {
-        handlers.AssociateHandler(cardDetectedChan, modeSwitch, config.PocketBaseURL, w, r)
+    // Set up HTTP routes for cards management
+    http.HandleFunc("/cards/associate", func(w http.ResponseWriter, r *http.Request) {
+    handlers.AssociateCardHandler(config.PocketBaseURL, modeSwitch, w, r)
     })
 
     // Set up HTTP routes for alarm management

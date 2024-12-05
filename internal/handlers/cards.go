@@ -11,7 +11,7 @@ import (
 	"cartophone-server/internal/pocketbase"
 )
 
-func AssociateHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
+func AssociateCardHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[DEBUG] AssociateHandler started. Processing request...")
 
 	// Parse playlist ID
