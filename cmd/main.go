@@ -24,10 +24,7 @@ func main() {
     if err != nil {
         log.Fatalf("Failed to load configuration: %v", err)
     }
-
-    log.Printf("[DEBUG] Loaded PocketBase URL: %s\n", config.PocketBaseURL)
-    log.Printf("[DEBUG] Loaded OwnTone URL: %s\n", config.OwnToneBaseURL)
-
+    
     // Initialize the NFC reader
     reader, err := nfc.NewReader(config.DevicePath)
     if err != nil {
