@@ -9,7 +9,12 @@ import (
 func Play(baseURL string) error {
 	url := fmt.Sprintf("%s/api/player/play", baseURL)
 
-	resp, err := http.Post(url, "application/json", nil)
+	req, err := http.NewRequest(http.MethodPut, url, nil) // Change to PUT method
+	if err != nil {
+		return fmt.Errorf("failed to create play command request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send play command: %w", err)
 	}
@@ -26,7 +31,12 @@ func Play(baseURL string) error {
 func Pause(baseURL string) error {
 	url := fmt.Sprintf("%s/api/player/pause", baseURL)
 
-	resp, err := http.Post(url, "application/json", nil)
+	req, err := http.NewRequest(http.MethodPut, url, nil) // Change to PUT method
+	if err != nil {
+		return fmt.Errorf("failed to create pause command request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send pause command: %w", err)
 	}
