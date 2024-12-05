@@ -55,6 +55,11 @@ func main() {
     // Start the alarm checker from utils
     alarms.StartAlarmChecker(config.PocketBaseURL)
 
+    // Set up HTTP routes for player management
+    http.HandleFunc("/player/status", func(w http.ResponseWriter, r *http.Request) {
+        handlers.PlayerStatusHandler(config.OwnToneBaseURL, w, r)
+    })
+
     // Set up HTTP routes for cards management
     http.HandleFunc("/cards/associate", func(w http.ResponseWriter, r *http.Request) {
         handlers.AssociateCardHandler(cardDetectedChan, modeSwitch, config.PocketBaseURL, w, r)
