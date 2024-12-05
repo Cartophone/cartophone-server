@@ -14,9 +14,10 @@ import (
 func AssociateCardHandler(cardDetectedChan <-chan string, modeSwitch chan string, baseURL string, w http.ResponseWriter, r *http.Request) {
 	fmt.Println("[DEBUG] AssociateHandler started. Processing request...")
 
-	// Parse playlist ID
+	// Parse playlist ID and replaceCard flag
 	var payload struct {
-		PlaylistID string `json:"playlistId"`
+		PlaylistID  string `json:"playlistId"`
+		ReplaceCard bool   `json:"replaceCard,omitempty"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		WriteResponse(w, http.StatusBadRequest, "Invalid request payload")
@@ -30,7 +31,7 @@ func AssociateCardHandler(cardDetectedChan <-chan string, modeSwitch chan string
 		return
 	}
 
-	fmt.Printf("[DEBUG] Associate mode requested. Playlist ID: %s\n", payload.PlaylistID)
+	fmt.Printf("[DEBUG] Associate mode requested. Playlist ID: %s, ReplaceCard: %t\n", payload.PlaylistID, payload.ReplaceCard)
 
 	// Send AssociateMode signal
 	select {
@@ -58,15 +59,28 @@ func AssociateCardHandler(cardDetectedChan <-chan string, modeSwitch chan string
 				WriteResponse(w, http.StatusConflict, "Card is already associated with this playlist")
 				fmt.Printf("[DEBUG] Card %s is already associated with playlist %s\n", uid, payload.PlaylistID)
 			} else {
-				WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
-				fmt.Printf("[DEBUG] Card %s is already associated with another playlist\n", uid)
+				if payload.ReplaceCard {
+					// Update the card to associate with the new playlist
+					card.PlaylistID = payload.PlaylistID
+					err = pocketbase.UpdateCard(baseURL, *card)
+					if err != nil {
+						WriteResponse(w, http.StatusInternalServerError, fmt.Sprintf("Error updating card: %v", err))
+						fmt.Printf("[DEBUG] Error updating card in PocketBase: %v\n", err)
+					} else {
+						WriteResponse(w, http.StatusOK, fmt.Sprintf("Card %s reassigned to playlist %s successfully!", uid, payload.PlaylistID))
+						fmt.Printf("[DEBUG] Card %s reassigned to playlist %s successfully. HTTP response sent.\n", uid, payload.PlaylistID)
+					}
+				} else {
+					WriteResponse(w, http.StatusConflict, "Card is already associated with another playlist")
+					fmt.Printf("[DEBUG] Card %s is already associated with another playlist\n", uid)
+				}
 			}
 			// Switch back to ReadMode after handling
 			switchToReadMode(modeSwitch)
 			return
 		}
 
-		// Add or update the card
+		// Add the card
 		newCard := pocketbase.Card{
 			UID:        uid,
 			PlaylistID: payload.PlaylistID,
