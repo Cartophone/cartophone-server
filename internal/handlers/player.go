@@ -72,34 +72,34 @@ func PauseHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 // ListQueueHandler lists the current Owntone player queue
 func ListQueueHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		utils.LogMessage("ERROR", "Invalid request method for ListQueueHandler", nil)
+		utils.LogMessage("ERROR", "Invalid request method for ListQueueHandler", map[string]string{"method": r.Method})
 		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return
 	}
 
-	queue, err := owntone.FetchQueue(baseURL)
+	queue, err := owntone.GetQueue(baseURL)
 	if err != nil {
-		utils.LogMessage("ERROR", "Failed to fetch queue", map[string]string{"error": err.Error()})
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.LogMessage("ERROR", "Failed to fetch Owntone queue", map[string]string{"error": err.Error()})
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch queue"})
 		return
 	}
 
-	utils.LogMessage("INFO", "Owntone queue fetched successfully", nil)
+	utils.LogMessage("INFO", "Owntone queue fetched successfully", map[string]interface{}{"count": len(queue)})
 	utils.WriteJSONResponse(w, http.StatusOK, queue)
 }
 
-// ClearQueueHandler clears the Owntone player queue
+// ClearQueueHandler clears the Owntone queue
 func ClearQueueHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		utils.LogMessage("ERROR", "Invalid request method for ClearQueueHandler", nil)
+		utils.LogMessage("ERROR", "Invalid request method for ClearQueueHandler", map[string]string{"method": r.Method})
 		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return
 	}
 
 	err := owntone.ClearQueue(baseURL)
 	if err != nil {
-		utils.LogMessage("ERROR", "Failed to clear queue", map[string]string{"error": err.Error()})
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.LogMessage("ERROR", "Failed to clear Owntone queue", map[string]string{"error": err.Error()})
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": "Failed to clear queue"})
 		return
 	}
 
@@ -107,30 +107,36 @@ func ClearQueueHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Queue cleared successfully"})
 }
 
-// AddToQueueHandler adds a track to the Owntone player queue
+// AddToQueueHandler adds items to the Owntone queue
 func AddToQueueHandler(baseURL string, w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		utils.LogMessage("ERROR", "Invalid request method for AddToQueueHandler", nil)
+		utils.LogMessage("ERROR", "Invalid request method for AddToQueueHandler", map[string]string{"method": r.Method})
 		utils.WriteJSONResponse(w, http.StatusMethodNotAllowed, map[string]string{"error": "Invalid request method"})
 		return
 	}
 
 	var payload struct {
-		URI string `json:"uri"`
+		Uris []string `json:"uris"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		utils.LogMessage("ERROR", "Invalid request payload", map[string]string{"error": err.Error()})
-		utils.WriteJSONResponse(w, http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+		utils.LogMessage("ERROR", "Invalid request payload for AddToQueueHandler", nil)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 		return
 	}
 
-	err := owntone.AddToQueue(baseURL, payload.URI)
+	if len(payload.Uris) == 0 {
+		utils.LogMessage("ERROR", "Empty URIs array in AddToQueueHandler request payload", nil)
+		utils.WriteJSONResponse(w, http.StatusBadRequest, map[string]string{"error": "URIs array cannot be empty"})
+		return
+	}
+
+	err := owntone.AddToQueue(baseURL, payload.Uris)
 	if err != nil {
-		utils.LogMessage("ERROR", "Failed to add track to queue", map[string]string{"error": err.Error()})
-		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.LogMessage("ERROR", "Failed to add items to Owntone queue", map[string]string{"error": err.Error()})
+		utils.WriteJSONResponse(w, http.StatusInternalServerError, map[string]string{"error": "Failed to add items to queue"})
 		return
 	}
 
-	utils.LogMessage("INFO", "Track added to Owntone queue successfully", nil)
-	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Track added successfully"})
+	utils.LogMessage("INFO", "Owntone queue items added successfully", map[string]interface{}{"uris": payload.Uris})
+	utils.WriteJSONResponse(w, http.StatusOK, map[string]string{"message": "Items added to queue successfully"})
 }
